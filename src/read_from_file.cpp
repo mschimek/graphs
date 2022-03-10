@@ -92,7 +92,7 @@ inline std::pair<WEdgeList, VertexRange> read_from_file(
 }  // namespace graphs::MatrixMarket
 
 namespace graphs {
-std::pair<std::vector<WEdge>, VertexRange> read_weighted_graph(
+std::pair<std::vector<WEdge>, VertexRange> read_unweighted_graph(
     const std::string& filename, GraphFormat format, MPIComm comm) {
   switch (format) {
     case GraphFormat::MatrixMarket:
