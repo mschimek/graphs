@@ -40,9 +40,10 @@ std::pair<std::vector<WEdge>, VertexRange> get_rgg2D(std::size_t log_n,
   auto SrcDstSort = [](const WEdge& lhs, const WEdge& rhs) {
     return std::tie(lhs.src, lhs.dst) < std::tie(rhs.src, rhs.dst);
   };
-  int num_levels = 2;
+  const int num_levels = 2;
   Ams::sortLevel(mpi_edge_type, result.first, num_levels, gen, comm.comm,
                  SrcDstSort);
+  MPI_Type_free(&mpi_edge_type);
   result.second.first = result.first.empty() ? -1 : result.first.front().src;
   result.second.second = result.first.empty() ? -1 : result.first.back().src;
 
