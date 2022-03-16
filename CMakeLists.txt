@@ -26,6 +26,7 @@ target_include_directories(graphs_base_target SYSTEM INTERFACE
 add_library(graphs STATIC
   src/read_from_file.cpp
   src/generate_gnm.cpp
+  src/generate_rgg.cpp
   src/generate_rmat.cpp)
 target_link_libraries(graphs PRIVATE graphs_base_target kadis generators rmat)
 target_include_directories(graphs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
