@@ -32,5 +32,11 @@ target_link_libraries(graphs PRIVATE graphs_base_target kadis generators rmat)
 target_include_directories(graphs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(example app/example.cpp)
+add_executable(generate_gnm app/generate_gnm.cpp)
+add_executable(generate_rmat app/generate_rmat.cpp)
+add_executable(generate_rgg app/generate_rgg.cpp)
 target_link_libraries(example PRIVATE graphs_base_target graphs)
+target_link_libraries(generate_gnm PRIVATE graphs_base_target graphs)
+target_link_libraries(generate_rmat PRIVATE graphs_base_target graphs)
+target_link_libraries(generate_rgg PRIVATE graphs_base_target graphs)
 

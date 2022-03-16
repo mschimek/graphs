@@ -47,24 +47,6 @@ std::pair<std::vector<WEdge>, VertexRange> get_rgg2D(std::size_t log_n,
   result.second.first = result.first.empty() ? -1 : result.first.front().src;
   result.second.second = result.first.empty() ? -1 : result.first.back().src;
 
-  for (std::size_t i = 0; i < comm.size; ++i) {
-    MPI_Barrier(comm.comm);
-    std::this_thread::sleep_for(std::chrono::milliseconds(40));
-    if (i == comm.rank) {
-      std::cout << "rank: " << comm.rank << std::endl;
-      std::cout << "\tsize : " << result.first.size() << std::endl;
-      std::cout << "\trange: " << result.second.first << " "
-                << result.second.second << std::endl;
-      for (const auto& edge : result.first)
-        std::cout << "\t" << edge << std::endl;
-    }
-  }
   return result;
-
-  // remove_upside_down(res.first,
-  // res.second);
-  // std::sort(res.first.begin(),
-  // res.first.end(), SrcDstOrder{});
-  // return res;
 }
 }  // namespace graphs

@@ -1,8 +1,7 @@
 #include <iostream>
 
 #include <mpi.h>
-
-#include "../interface.hpp"
+#include "interface.hpp"
 int main() {
   std::cout << "hello" << std::endl;
   MPI_Init(nullptr, nullptr);
