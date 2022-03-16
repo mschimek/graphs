@@ -13,7 +13,7 @@ add_subdirectory(external/KaGen)
 add_subdirectory(external/KaDiS)
 
 add_library(graphs_base_target INTERFACE)
-target_compile_options(graphs_base_target INTERFACE -O3 -march=native)
+target_compile_options(graphs_base_target INTERFACE -O3 -march=native -std=c++17)
 target_link_libraries(graphs_base_target INTERFACE MPI::MPI_CXX)
 target_include_directories(graphs_base_target INTERFACE 
   ${CMAKE_CURRENT_SOURCE_DIR}
