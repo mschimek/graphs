@@ -60,8 +60,8 @@ inline std::pair<WEdgeList, VertexRange> read_from_file(
   in.seekg(0, std::ios::end);
   const std::size_t length = in.tellg();
   const auto [n, m, header_chars] = read_header(in);
-  std::cout << comm.rank << " length: " << length
-            << " header_chars: " << header_chars << std::endl;
+  //std::cout << comm.rank << " length: " << length
+  //          << " header_chars: " << header_chars << std::endl;
   in.seekg(header_chars);
 
   const bool is_last_rank = comm.rank + 1 == comm.size;
