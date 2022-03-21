@@ -3,7 +3,7 @@
 	url = git@github.com:mschimek/KaGen.git
 [submodule "external/KaDiS"]
 	path = external/KaDiS
-	url = git@github.com:MichaelAxtmann/KaDiS.git
+	url = git@github.com:mschimek/KaDiS.git
 [submodule "external/rmat-fork"]
 	path = external/rmat-fork
 	url = git@git.scc.kit.edu:jj1592/rmat-fork.git
