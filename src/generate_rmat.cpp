@@ -116,7 +116,7 @@ std::pair<WEdgeList, VertexRange> get_rmat_edges_evenly_distributed(
   Ams::sortLevel(mpi_edge_type, edges, num_levels, gen, comm.comm, SrcDstSort);
   MPI_Type_free(&mpi_edge_type);
   const VId v_min = !edges.empty() ? edges.front().src : -1;
-  const VId v_max = !edges.empty() ? edges.front().src : -1;
+  const VId v_max = !edges.empty() ? edges.back().src : -1;
   return std::make_pair(std::move(edges), VertexRange{v_min, v_max});
 }
 }  // namespace graphs
