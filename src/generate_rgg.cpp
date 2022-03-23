@@ -8,9 +8,10 @@
 
 namespace graphs {
 std::size_t find_smaller_square_power_of_two(std::size_t i) {
-  const std::size_t square_root =
-      std::sqrt(1ull << static_cast<std::size_t>(std::log2(i)));
-  return square_root * square_root;
+  if (i <= 3) return 1;
+  const std::size_t log_i = static_cast<std::size_t>(std::log2(i));
+  const std::size_t log_i_even = log_i % 2 == 0 ? log_i : log_i - 1;
+  return 1ull << log_i_even;
 }
 std::pair<std::vector<WEdge>, VertexRange> get_rgg2D(std::size_t log_n,
                                                      double radius,
