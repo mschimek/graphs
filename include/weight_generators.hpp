@@ -8,12 +8,19 @@ namespace graphs {
 template <typename Vertex, typename Weight, typename Edge>
 struct WeightGenerator {
   using EdgeType = Edge;
-  Weight operator()(Vertex src, Vertex dst, Weight min_weight = 1,
-                    Weight max_weight = 100'000) {
-    return get_random_weight(src, dst, min_weight, max_weight);
+  using WeightType = Weight;
+  WeightGenerator(Weight min_weight, Weight max_weight) : min_weight_{min_weight}, max_weight_{max_weight} {}
+  WeightGenerator() : WeightGenerator(1, 100'000) {}
+  Weight operator()(Vertex src, Vertex dst) {
+    return get_random_weight(src, dst, min_weight_, max_weight_);
   }
+  Weight get_min_weight() const { return min_weight_; }
+  Weight get_max_weight() const { return max_weight_; }
 
  private:
+  Weight min_weight_;
+  Weight max_weight_;
+
   // from https://stackoverflow.com/a/12996028
   std::uint32_t hash32(std::uint32_t x) {
     x = ((x >> 16) ^ x) * 0x45d9f3b;
