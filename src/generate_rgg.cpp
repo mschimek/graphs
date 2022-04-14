@@ -8,14 +8,22 @@
 
 namespace graphs {
 std::size_t find_smaller_square_power_of_two(std::size_t i) {
-  if (i <= 3) return 1;
+  if (i <= 3)
+    return 1;
   const std::size_t log_i = static_cast<std::size_t>(std::log2(i));
   const std::size_t log_i_even = log_i % 2 == 0 ? log_i : log_i - 1;
   return 1ull << log_i_even;
 }
-std::pair<std::vector<WEdge>, VertexRange> get_rgg2D(std::size_t log_n,
-                                                     double radius,
-                                                     MPIComm comm) {
+
+std::size_t find_next_greater_square_power_of_two(std::size_t i) {
+  if (i <= 3)
+    return 1;
+  const std::size_t log_i = static_cast<std::size_t>(std::log2(i));
+  const std::size_t log_i_even = log_i % 2 == 0 ? log_i : log_i + 1;
+  return 1ull << log_i_even;
+}
+std::pair<std::vector<WEdge>, VertexRange>
+get_rgg2D_using_sorting(std::size_t log_n, double radius, MPIComm comm) {
   const std::size_t square_power_of_two =
       find_smaller_square_power_of_two(comm.size);
   const bool is_power_of_two_square = square_power_of_two == comm.size;
@@ -50,4 +58,15 @@ std::pair<std::vector<WEdge>, VertexRange> get_rgg2D(std::size_t log_n,
 
   return result;
 }
-}  // namespace graphs
+
+std::pair<std::vector<WEdge>, VertexRange>
+get_rgg2D(std::size_t log_n, double radius, MPIComm comm) {
+  const std::size_t square_power_of_two =
+      find_next_greater_square_power_of_two(comm.size);
+  kagen::KaGen gen(comm.rank, comm.size);
+  auto result = gen.Generate2DRGG(WeightGenerator<VId, Weight, WEdge>{},
+                                  1ull << log_n, radius, square_power_of_two);
+  remove_upside_down(result.first, result.second);
+  return result;
+}
+} // namespace graphs
