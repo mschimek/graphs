@@ -4,6 +4,7 @@
 [submodule "external/KaDiS"]
 	path = external/KaDiS
 	url = git@github.com:mschimek/KaDiS.git
+    branch = make_ams_parallel
 [submodule "external/rmat-fork"]
 	path = external/rmat-fork
 	url = git@git.scc.kit.edu:jj1592/rmat-fork.git
