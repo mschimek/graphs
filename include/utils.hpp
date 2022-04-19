@@ -3,17 +3,13 @@
 #include <algorithm>
 #include <thread>
 
+#include "interface.hpp"
 #include "mpi.h"
 
-#include "interface.hpp"
-
 namespace graphs {
-inline void remove_upside_down(WEdgeList& edges, const VertexRange& range) {
-  auto it = std::remove_if(edges.begin(), edges.end(), [&](const WEdge& edge) {
-    return edge.src < range.first || edge.src > range.second;
-  });
-  edges.erase(it, edges.end());
-}
+void remove_upside_down(WEdgeList& edges, const VertexRange& range);
+void repair_edges(WEdgeList& edges, const VertexRange& range, MPIComm comm);
+
 template <typename F>
 void execute_in_order(MPIComm comm, F&& f) {
   for (std::size_t i = 0; i < comm.size; ++i) {

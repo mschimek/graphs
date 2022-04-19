@@ -35,11 +35,27 @@ struct WEdge {
     return out << "(" << edge.src << ", " << edge.dst << ", " << edge.weight
                << ")";
   }
+  struct MPI_Type {
+    MPI_Type() {
+      MPI_Type_contiguous(sizeof(WEdge), MPI_BYTE, &mpi_datatype_);
+      MPI_Type_commit(&mpi_datatype_);
+    }
+    ~MPI_Type() { MPI_Type_free(&mpi_datatype_); }
+    MPI_Datatype get_mpi_type() const { return mpi_datatype_; }
+    MPI_Datatype mpi_datatype_;
+  };
 };
 
 struct SrcDstOrder {
   bool operator()(const WEdge& lhs, const WEdge& rhs) const {
     return std::tie(lhs.src, lhs.dst) < std::tie(rhs.src, rhs.dst);
+  }
+};
+
+struct SrcDstWeightOrder {
+  bool operator()(const WEdge& lhs, const WEdge& rhs) const {
+    return std::tie(lhs.src, lhs.dst, lhs.weight) <
+           std::tie(rhs.src, rhs.dst, rhs.weight);
   }
 };
 
@@ -60,20 +76,21 @@ struct RMatParams {
 
 using WEdgeList = std::vector<WEdge>;
 
-std::pair<std::vector<WEdge>, VertexRange> get_gnm(std::size_t log_n,
-                                                   std::size_t log_m,
-                                                   MPIComm comm = MPIComm{});
-std::pair<std::vector<WEdge>, VertexRange> get_rgg2D(std::size_t log_n,
-                                                     double radius,
-                                                     MPIComm comm = MPIComm{});
+std::pair<std::vector<WEdge>, VertexRange>
+get_gnm(std::size_t log_n, std::size_t log_m, MPIComm comm = MPIComm{});
+std::pair<std::vector<WEdge>, VertexRange>
+get_rgg2D(std::size_t log_n, double radius, MPIComm comm = MPIComm{});
 
-std::pair<WEdgeList, VertexRange> get_rmat_edges_evenly_distributed(
-    const RMatParams& params, bool remove_duplicates = true,
-    MPIComm comm = MPIComm{});
+std::pair<WEdgeList, VertexRange>
+get_rmat_edges_evenly_distributed(const RMatParams& params,
+                                  bool remove_duplicates = true,
+                                  MPIComm comm = MPIComm{});
 
 enum class GraphFormat { MatrixMarket, Snap };
-std::pair<std::vector<WEdge>, VertexRange> read_weighted_graph(
-    const std::string& filename, GraphFormat format, MPIComm comm = MPIComm{});
-std::pair<std::vector<WEdge>, VertexRange> read_unweighted_graph(
-    const std::string& filename, GraphFormat format, MPIComm comm = MPIComm{});
-};  // namespace graphs
+std::pair<std::vector<WEdge>, VertexRange>
+read_weighted_graph(const std::string& filename, GraphFormat format,
+                    MPIComm comm = MPIComm{});
+std::pair<std::vector<WEdge>, VertexRange>
+read_unweighted_graph(const std::string& filename, GraphFormat format,
+                      MPIComm comm = MPIComm{});
+}; // namespace graphs
