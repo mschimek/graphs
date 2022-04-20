@@ -180,6 +180,11 @@ void repair_edges(WEdgeList& edges, const VertexRange& local_range,
 
   const auto ranges = get_ranges(local_range, comm);
 
+  //if(comm.rank == 0) {
+  //  for(const auto [vmin, vmax] : ranges) {
+  //    std::cout << vmin << ", " << vmax << std::endl;
+  //  }
+  //}
   auto remote_edges = get_remote_edges_pointing_to_pe(edges, ranges, comm);
   std::sort(remote_edges.begin(), remote_edges.end(), SrcDstOrder{});
   const std::uint64_t num_duplicates = remove_duplicates(edges);

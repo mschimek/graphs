@@ -28,6 +28,7 @@ add_library(graphs STATIC
   src/read_from_file.cpp
   src/generate_gnm.cpp
   src/generate_rgg.cpp
+  src/generate_rhg.cpp
   src/generate_rmat.cpp
   src/utils.cpp)
 target_link_libraries(graphs PRIVATE graphs_base_target kadis generators rmat)
@@ -37,8 +38,10 @@ add_executable(example app/example.cpp)
 add_executable(generate_gnm app/generate_gnm.cpp)
 add_executable(generate_rmat app/generate_rmat.cpp)
 add_executable(generate_rgg app/generate_rgg.cpp)
+add_executable(generate_rhg app/generate_rhg.cpp)
 target_link_libraries(example PRIVATE graphs_base_target graphs)
 target_link_libraries(generate_gnm PRIVATE graphs_base_target graphs)
 target_link_libraries(generate_rmat PRIVATE graphs_base_target graphs)
 target_link_libraries(generate_rgg PRIVATE graphs_base_target graphs)
+target_link_libraries(generate_rhg PRIVATE graphs_base_target graphs)
 
