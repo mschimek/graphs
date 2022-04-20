@@ -69,11 +69,11 @@ std::vector<VertexRange> get_ranges(const VertexRange local_range,
   ranges[comm.rank] = local_range;
   MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, ranges.data(),
                 sizeof(VertexRange), MPI_BYTE, comm.comm);
-  if (comm.rank == 0) {
-    for (const auto [first, second] : ranges) {
-      std::cout << first << ", " << second << std::endl;
-    }
-  }
+  //if (comm.rank == 0) {
+  //  for (const auto [first, second] : ranges) {
+  //    std::cout << first << ", " << second << std::endl;
+  //  }
+  //}
   return ranges;
 }
 
@@ -100,8 +100,7 @@ get_remote_edges_pointing_to_pe(const WEdgeList& edges,
       continue;
     msg_buffers.add(edge, pe);
   }
-  // return msg_buffers.exchange();
-  return {};
+  return msg_buffers.exchange();
 }
 
 std::size_t remove_duplicates(WEdgeList& edges) {
@@ -119,6 +118,8 @@ std::size_t add_missing_edges(WEdgeList& edges, const WEdgeList& remote_edges) {
     const auto it = std::lower_bound(edges.begin(), edges.end(), flipped_edge,
                                      SrcDstOrder{});
     if (it == edges.end()) {
+      missing_edges.push_back(flipped_edge);
+    } else if (it->src != flipped_edge.src || it->dst != flipped_edge.dst) {
       missing_edges.push_back(flipped_edge);
     } else if (it->weight != remote_edge.weight) {
       std::cerr << "problem in weight generation: " << (*it) << " "
@@ -152,6 +153,8 @@ std::size_t add_missing_local_edges(WEdgeList& edges,
                                      SrcDstOrder{});
     if (it == edges.end()) {
       missing_edges.push_back(flipped_edge);
+    } else if (it->src != flipped_edge.src || it->dst != flipped_edge.dst) {
+      missing_edges.push_back(flipped_edge);
     } else if (it->weight != edge.weight) {
       std::cerr << "problem in weight generation: " << (*it) << " " << edge
                 << " -> abort" << std::endl;
@@ -180,11 +183,11 @@ void repair_edges(WEdgeList& edges, const VertexRange& local_range,
 
   const auto ranges = get_ranges(local_range, comm);
 
-  //if(comm.rank == 0) {
-  //  for(const auto [vmin, vmax] : ranges) {
-  //    std::cout << vmin << ", " << vmax << std::endl;
-  //  }
-  //}
+  // if(comm.rank == 0) {
+  //   for(const auto [vmin, vmax] : ranges) {
+  //     std::cout << vmin << ", " << vmax << std::endl;
+  //   }
+  // }
   auto remote_edges = get_remote_edges_pointing_to_pe(edges, ranges, comm);
   std::sort(remote_edges.begin(), remote_edges.end(), SrcDstOrder{});
   const std::uint64_t num_duplicates = remove_duplicates(edges);
@@ -199,6 +202,7 @@ void repair_edges(WEdgeList& edges, const VertexRange& local_range,
           << " num_missing_local_edges: "
           << allreduce_sum(num_missing_local_edges, comm)
           << " num_missing_edges: " << allreduce_sum(num_missing_edges, comm)
+          << " remote_edges: " << allreduce_sum(remote_edges.size(), comm)
           << std::endl;
   if (comm.rank == 0) {
     std::cout << sstream.str() << std::endl;
