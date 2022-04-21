@@ -30,6 +30,7 @@ add_library(graphs STATIC
   src/generate_rgg.cpp
   src/generate_rhg.cpp
   src/generate_rmat.cpp
+  src/generate_grid.cpp
   src/utils.cpp)
 target_link_libraries(graphs PRIVATE graphs_base_target kadis generators rmat)
 target_include_directories(graphs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -39,9 +40,11 @@ add_executable(generate_gnm app/generate_gnm.cpp)
 add_executable(generate_rmat app/generate_rmat.cpp)
 add_executable(generate_rgg app/generate_rgg.cpp)
 add_executable(generate_rhg app/generate_rhg.cpp)
+add_executable(generate_grid app/generate_grid.cpp)
 target_link_libraries(example PRIVATE graphs_base_target graphs)
 target_link_libraries(generate_gnm PRIVATE graphs_base_target graphs)
 target_link_libraries(generate_rmat PRIVATE graphs_base_target graphs)
 target_link_libraries(generate_rgg PRIVATE graphs_base_target graphs)
 target_link_libraries(generate_rhg PRIVATE graphs_base_target graphs)
+target_link_libraries(generate_grid PRIVATE graphs_base_target graphs)
 

@@ -85,6 +85,11 @@ std::pair<std::vector<WEdge>, VertexRange> get_rhg(std::size_t log_n,
                                                    double gamma,
                                                    MPIComm comm = MPIComm{});
 
+std::pair<std::vector<WEdge>, VertexRange> get_grid(std::size_t log_n,
+                                                    std::size_t num_dimensions,
+                                                    double p, bool is_periodic,
+                                                    MPIComm comm);
+
 std::pair<WEdgeList, VertexRange>
 get_rmat_edges_evenly_distributed(const RMatParams& params,
                                   bool remove_duplicates = true,
@@ -98,6 +103,3 @@ std::pair<std::vector<WEdge>, VertexRange>
 read_unweighted_graph(const std::string& filename, GraphFormat format,
                       MPIComm comm = MPIComm{});
 }; // namespace graphs
-
-
-
