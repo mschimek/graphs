@@ -9,12 +9,7 @@
 int main() {
   MPI_Init(nullptr, nullptr);
   graphs::MPIComm comm;
-  auto [edges, range] = graphs::get_grid2D(4, 3, 1, true, comm);
-  // std::sort(edges.begin(), edges.end(), [](const auto& lhs, const auto& rhs)
-  // {
-  //   return lhs.weight < rhs.weight;
-  // });
-  //
+  auto [edges, range] = graphs::get_grid3D(4, 4, 4, 1, true, comm);
   std::sort(edges.begin(), edges.end(), [](const auto& lhs, const auto& rhs) {
     return std::tie(lhs.src, lhs.dst) < std::tie(rhs.src, rhs.dst);
   });

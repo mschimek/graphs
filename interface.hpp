@@ -85,10 +85,13 @@ std::pair<std::vector<WEdge>, VertexRange> get_rhg(std::size_t log_n,
                                                    double gamma,
                                                    MPIComm comm = MPIComm{});
 
-std::pair<std::vector<WEdge>, VertexRange> get_grid(std::size_t log_n,
-                                                    std::size_t num_dimensions,
-                                                    double p, bool is_periodic,
-                                                    MPIComm comm);
+std::pair<std::vector<WEdge>, VertexRange>
+get_grid2D(std::size_t log_x, std::size_t log_y, double p, bool is_periodic,
+           MPIComm comm);
+
+std::pair<std::vector<WEdge>, VertexRange>
+get_grid3D(std::size_t log_x, std::size_t log_y, std::size_t log_z, double p,
+           bool is_periodic, MPIComm comm);
 
 std::pair<WEdgeList, VertexRange>
 get_rmat_edges_evenly_distributed(const RMatParams& params,

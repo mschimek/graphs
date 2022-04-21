@@ -69,11 +69,11 @@ std::vector<VertexRange> get_ranges(const VertexRange local_range,
   ranges[comm.rank] = local_range;
   MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, ranges.data(),
                 sizeof(VertexRange), MPI_BYTE, comm.comm);
-  //if (comm.rank == 0) {
-  //  for (const auto [first, second] : ranges) {
-  //    std::cout << first << ", " << second << std::endl;
-  //  }
-  //}
+  // if (comm.rank == 0) {
+  //   for (const auto [first, second] : ranges) {
+  //     std::cout << first << ", " << second << std::endl;
+  //   }
+  // }
   return ranges;
 }
 
@@ -207,5 +207,17 @@ void repair_edges(WEdgeList& edges, const VertexRange& local_range,
   if (comm.rank == 0) {
     std::cout << sstream.str() << std::endl;
   }
+}
+
+std::size_t get_next_pow_two_with_exp_divisible_by(std::size_t i,
+                                                   std::size_t divisor) {
+  if (i <= 1) {
+    return 1ull << divisor;
+  }
+  const std::size_t exponent = static_cast<std::size_t>(std::log2(i));
+  const std::size_t remainder = exponent % divisor;
+  const std::size_t offset = remainder == 0 ? 0 : (divisor - remainder);
+  const std::size_t exponent_divisible_by = exponent + offset;
+  return 1ull << exponent_divisible_by;
 }
 } // namespace graphs
