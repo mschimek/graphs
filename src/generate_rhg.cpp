@@ -10,10 +10,12 @@
 namespace graphs {
 
 std::pair<std::vector<WEdge>, VertexRange>
-get_rhg(std::size_t log_n, std::size_t avg_degree, double gamma, MPIComm comm) {
+get_rhg(std::size_t log_n, std::size_t avg_degree, double gamma,
+        WeightGeneratorConfig<Weight> wgen_config, MPIComm comm) {
   kagen::KaGen gen(comm.rank, comm.size);
-  auto res = gen.GenerateRHG(WeightGenerator<VId, Weight, WEdge>{},
-                             1ull << log_n, gamma, avg_degree);
+  auto res = gen.GenerateRHG(
+      UniformRandomWeightGenerator<VId, Weight, WEdge>{wgen_config},
+      1ull << log_n, gamma, avg_degree);
   remove_upside_down(res.first, res.second);
   std::sort(res.first.begin(), res.first.end(), SrcDstOrder{});
   repair_edges(res.first, res.second, comm);
@@ -22,9 +24,10 @@ get_rhg(std::size_t log_n, std::size_t avg_degree, double gamma, MPIComm comm) {
 
 std::pair<std::vector<WEdge>, VertexRange>
 get_rhg_explicit_num_edges(std::size_t log_n, std::size_t log_m, double gamma,
+                           WeightGeneratorConfig<Weight> wgen_config,
                            MPIComm comm) {
   kagen::KaGen gen(comm.rank, comm.size);
   const std::size_t avg_degree = (1ull << log_m) / (1ull << log_n);
-  return get_rhg(log_n, avg_degree, gamma, comm);
+  return get_rhg(log_n, avg_degree, gamma, wgen_config, comm);
 }
 } // namespace graphs

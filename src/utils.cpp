@@ -112,19 +112,18 @@ std::size_t remove_duplicates(WEdgeList& edges) {
 
 std::size_t add_missing_edges(WEdgeList& edges, const WEdgeList& remote_edges) {
   std::vector<WEdge> missing_edges;
+  const auto comp = SrcDstOrder{};
   for (const auto& remote_edge : remote_edges) {
     const WEdge flipped_edge{remote_edge.dst, remote_edge.src,
                              remote_edge.weight};
     const auto it = std::lower_bound(edges.begin(), edges.end(), flipped_edge,
-                                     SrcDstOrder{});
+                                     comp);
     if (it == edges.end()) {
       missing_edges.push_back(flipped_edge);
     } else if (it->src != flipped_edge.src || it->dst != flipped_edge.dst) {
       missing_edges.push_back(flipped_edge);
     } else if (it->weight != remote_edge.weight) {
-      std::cerr << "problem in weight generation: " << (*it) << " "
-                << remote_edge << " -> abort" << std::endl;
-      std::abort();
+      it->weight = comp(*it, remote_edge) ? it->weight : remote_edge.weight;
     }
   }
   if (!missing_edges.empty()) {
@@ -144,21 +143,20 @@ bool is_local(WEdge edge, const VertexRange& range) {
 std::size_t add_missing_local_edges(WEdgeList& edges,
                                     const VertexRange& local_range) {
   std::vector<WEdge> missing_edges;
-  for (const auto& edge : edges) {
+  const auto comp = SrcDstOrder{};
+  for (auto& edge : edges) {
     if (!is_local(edge, local_range)) {
       continue;
     }
     const WEdge flipped_edge{edge.dst, edge.src, edge.weight};
     const auto it = std::lower_bound(edges.begin(), edges.end(), flipped_edge,
-                                     SrcDstOrder{});
+                                     comp);
     if (it == edges.end()) {
       missing_edges.push_back(flipped_edge);
     } else if (it->src != flipped_edge.src || it->dst != flipped_edge.dst) {
       missing_edges.push_back(flipped_edge);
     } else if (it->weight != edge.weight) {
-      std::cerr << "problem in weight generation: " << (*it) << " " << edge
-                << " -> abort" << std::endl;
-      std::abort();
+      edge.weight = comp(edge, *it) ? edge.weight : it->weight;
     }
   }
   if (!missing_edges.empty()) {
