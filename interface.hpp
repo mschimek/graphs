@@ -78,20 +78,38 @@ using WEdgeList = std::vector<WEdge>;
 
 std::pair<std::vector<WEdge>, VertexRange>
 get_gnm(std::size_t log_n, std::size_t log_m, MPIComm comm = MPIComm{});
+
 std::pair<std::vector<WEdge>, VertexRange>
 get_rgg2D(std::size_t log_n, double radius, MPIComm comm = MPIComm{});
+
+std::pair<std::vector<WEdge>, VertexRange>
+get_rgg2D(std::size_t log_n, std::size_t log_m, MPIComm comm = MPIComm{});
+
 std::pair<std::vector<WEdge>, VertexRange> get_rhg(std::size_t log_n,
                                                    std::size_t avg_degree,
                                                    double gamma,
                                                    MPIComm comm = MPIComm{});
 
 std::pair<std::vector<WEdge>, VertexRange>
-get_grid2D(std::size_t log_x, std::size_t log_y, double p, bool is_periodic,
-           MPIComm comm);
+get_rhg_explicit_num_edges(std::size_t log_n, std::size_t log_m, double gamma,
+                           MPIComm comm = MPIComm{});
 
 std::pair<std::vector<WEdge>, VertexRange>
+get_grid2D(std::size_t log_x, std::size_t log_y, double p, bool is_periodic,
+           MPIComm comm = MPIComm{});
+
+std::pair<std::vector<WEdge>, VertexRange> get_grid2D(std::size_t log_n,
+                                                      double p,
+                                                      bool is_periodic,
+                                                      MPIComm comm = MPIComm{});
+std::pair<std::vector<WEdge>, VertexRange>
 get_grid3D(std::size_t log_x, std::size_t log_y, std::size_t log_z, double p,
-           bool is_periodic, MPIComm comm);
+           bool is_periodic, MPIComm comm = MPIComm{});
+
+std::pair<std::vector<WEdge>, VertexRange> get_grid3D(std::size_t log_n,
+                                                      double p,
+                                                      bool is_periodic,
+                                                      MPIComm comm = MPIComm{});
 
 std::pair<WEdgeList, VertexRange>
 get_rmat_edges_evenly_distributed(const RMatParams& params,
