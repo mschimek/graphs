@@ -22,7 +22,6 @@ get_grid2D(std::size_t log_x, std::size_t log_y, double p, bool is_periodic,
   kagen::KaGen gen(comm.rank, comm.size);
   const std::size_t square_power_of_two =
       get_next_pow_two_with_exp_divisible_by(comm.size, 2);
-  std::cout << square_power_of_two << std::endl;
   auto res =
       gen.Generate2DGrid(WeightGenerator<VId, Weight, WEdge>{}, 1ull << log_x,
                          1ull << log_y, p, is_periodic, square_power_of_two);
@@ -51,7 +50,6 @@ get_grid3D(std::size_t log_x, std::size_t log_y, std::size_t log_z, double p,
   kagen::KaGen gen(comm.rank, comm.size);
   const std::size_t cube_power_of_two =
       get_next_pow_two_with_exp_divisible_by(comm.size, 3);
-  std::cout << cube_power_of_two << std::endl;
   auto res = gen.Generate3DGrid(WeightGenerator<VId, Weight, WEdge>{},
                                 1ull << log_x, 1ull << log_y, 1ull << log_z, p,
                                 is_periodic, cube_power_of_two);
