@@ -1,14 +1,17 @@
 #include "include/utils.hpp"
 #include "interface.hpp"
+#include "ips4o/ips4o.hpp"
+#include "memory_utils.hpp"
 #include <numeric>
 #include <sstream>
 
 namespace graphs {
-void remove_upside_down(WEdgeList& edges, const VertexRange& range) {
+void remove_upside_down(std::vector<WEdge>& edges, const VertexRange& range) {
   auto it = std::remove_if(edges.begin(), edges.end(), [&](const WEdge& edge) {
-    return edge.src < range.first || edge.src > range.second;
+    return edge.get_src() < range.first || edge.get_src() > range.second;
   });
   edges.erase(it, edges.end());
+  edges.shrink_to_fit();
 }
 
 namespace internal {
@@ -41,6 +44,7 @@ public:
         recv_displs.back() + recv_counts.back();
 
     send_buf.reserve(total_send_count);
+    memory_stats().print("in exchange");
     for (std::size_t i = 0; i < send_counts.size(); ++i) {
       for (const auto& elem : data_for_pe_[i]) {
         send_buf.push_back(elem);
@@ -95,7 +99,7 @@ get_remote_edges_pointing_to_pe(const WEdgeList& edges,
                                 MPIComm comm) {
   MessageBuffers msg_buffers(comm);
   for (const auto& edge : edges) {
-    int pe = get_home_pe(edge.dst, ranges);
+    int pe = get_home_pe(edge.get_dst(), ranges);
     if (pe == comm.rank)
       continue;
     msg_buffers.add(edge, pe);
@@ -103,8 +107,41 @@ get_remote_edges_pointing_to_pe(const WEdgeList& edges,
   return msg_buffers.exchange();
 }
 
+WEdgeList get_remote_edges_pointing_to_pe_pseudo_inplace(
+    WEdgeList& edges, const std::vector<VertexRange>& ranges, MPIComm comm) {
+
+  ips4o::parallel::sort(edges.begin(), edges.end(), DstSrcOrder<WEdge>{});
+  std::vector<int> send_counts(comm.size);
+  for (const auto& edge : edges) {
+    int pe = get_home_pe(edge.get_dst(), ranges);
+    ++send_counts[pe];
+  }
+  std::vector<int> recv_counts(comm.size);
+  std::vector<int> send_displs(comm.size);
+  std::vector<int> recv_displs(comm.size);
+
+  std::exclusive_scan(send_counts.begin(), send_counts.end(),
+                      send_displs.begin(), 0);
+  const std::size_t total_send_count = send_displs.back() + send_counts.back();
+  MPI_Alltoall(send_counts.data(), 1, MPI_INT, recv_counts.data(), 1, MPI_INT,
+               comm.comm);
+  std::exclusive_scan(recv_counts.begin(), recv_counts.end(),
+                      recv_displs.begin(), 0);
+  const std::size_t total_recv_count = recv_displs.back() + recv_counts.back();
+
+  WEdgeList recv_buf(total_recv_count);
+  memory_stats().print("in exchange");
+  const auto wedge_mpi_type = WEdge::MPI_Type{};
+  MPI_Alltoallv(edges.data(), send_counts.data(), send_displs.data(),
+                wedge_mpi_type.get_mpi_type(), recv_buf.data(),
+                recv_counts.data(), recv_displs.data(),
+                wedge_mpi_type.get_mpi_type(), comm.comm);
+  ips4o::parallel::sort(edges.begin(), edges.end(), SrcDstOrder<WEdge>{});
+  return recv_buf;
+}
+
 std::size_t remove_duplicates(WEdgeList& edges) {
-  auto it = std::unique(edges.begin(), edges.end());
+  auto it = std::unique(edges.begin(), edges.end(), SrcDstWeightEqual<WEdge>{});
   std::size_t num_duplicates = std::distance(it, edges.end());
   edges.erase(it, edges.end());
   return num_duplicates;
@@ -112,15 +149,16 @@ std::size_t remove_duplicates(WEdgeList& edges) {
 
 std::size_t add_missing_edges(WEdgeList& edges, const WEdgeList& remote_edges) {
   std::vector<WEdge> missing_edges;
-  const auto comp = SrcDstOrder{};
+  const auto comp = SrcDstOrder<WEdge>{};
   for (const auto& remote_edge : remote_edges) {
-    const WEdge flipped_edge{remote_edge.dst, remote_edge.src,
-                             remote_edge.weight};
-    const auto it = std::lower_bound(edges.begin(), edges.end(), flipped_edge,
-                                     comp);
+    const WEdge flipped_edge{remote_edge.get_dst(), remote_edge.get_src(),
+                             remote_edge.get_weight()};
+    const auto it =
+        std::lower_bound(edges.begin(), edges.end(), flipped_edge, comp);
     if (it == edges.end()) {
       missing_edges.push_back(flipped_edge);
-    } else if (it->src != flipped_edge.src || it->dst != flipped_edge.dst) {
+    } else if (it->get_src() != flipped_edge.get_src() ||
+               it->get_dst() != flipped_edge.get_dst()) {
       missing_edges.push_back(flipped_edge);
     } else if (it->weight != remote_edge.weight) {
       it->weight = comp(*it, remote_edge) ? it->weight : remote_edge.weight;
@@ -128,7 +166,38 @@ std::size_t add_missing_edges(WEdgeList& edges, const WEdgeList& remote_edges) {
   }
   if (!missing_edges.empty()) {
     edges.insert(edges.end(), missing_edges.begin(), missing_edges.end());
-    std::sort(edges.begin(), edges.end(), SrcDstWeightOrder{});
+    std::sort(edges.begin(), edges.end(), SrcDstWeightOrder<WEdge>{});
+  }
+  return missing_edges.size();
+}
+
+// assertion no duplicates in edges
+std::size_t add_missing_edges_via_merging(WEdgeList& edges,
+                                          const WEdgeList& remote_edges) {
+  std::vector<WEdge> missing_edges;
+  const auto comp = SrcDstOrder<WEdge>{};
+  auto it = edges.begin();
+  MPIComm comm;
+  for (std::size_t i = 0; i < remote_edges.size(); ++i) {
+    const auto& remote_edge = remote_edges[i];
+    const WEdge flipped_edge{remote_edge.get_dst(), remote_edge.get_src(),
+                             remote_edge.get_weight()};
+    for (; it != edges.end() && comp(*it, flipped_edge); ++it)
+      ;
+    // now it points to the first element of edges which is equal to or greater
+    // than flipped_edge
+    if (it == edges.end()) {
+      missing_edges.push_back(flipped_edge);
+    } else if (it->get_src() != flipped_edge.get_src() ||
+               it->get_dst() != flipped_edge.get_dst()) {
+      missing_edges.push_back(flipped_edge);
+    } else if (it->weight != remote_edge.weight) {
+      it->weight = comp(*it, remote_edge) ? it->weight : remote_edge.weight;
+    }
+  }
+  if (!missing_edges.empty()) {
+    edges.insert(edges.end(), missing_edges.begin(), missing_edges.end());
+    ips4o::parallel::sort(edges.begin(), edges.end(), SrcDstWeightOrder<WEdge>{});
   }
   return missing_edges.size();
 }
@@ -137,23 +206,24 @@ bool is_local(VId v, const VertexRange& range) {
 }
 
 bool is_local(WEdge edge, const VertexRange& range) {
-  return is_local(edge.src, range) && is_local(edge.dst, range);
+  return is_local(edge.get_src(), range) && is_local(edge.get_dst(), range);
 }
 
 std::size_t add_missing_local_edges(WEdgeList& edges,
                                     const VertexRange& local_range) {
   std::vector<WEdge> missing_edges;
-  const auto comp = SrcDstOrder{};
+  const auto comp = SrcDstOrder<WEdge>{};
   for (auto& edge : edges) {
     if (!is_local(edge, local_range)) {
       continue;
     }
-    const WEdge flipped_edge{edge.dst, edge.src, edge.weight};
-    const auto it = std::lower_bound(edges.begin(), edges.end(), flipped_edge,
-                                     comp);
+    const WEdge flipped_edge{edge.get_dst(), edge.get_src(), edge.get_weight()};
+    const auto it =
+        std::lower_bound(edges.begin(), edges.end(), flipped_edge, comp);
     if (it == edges.end()) {
       missing_edges.push_back(flipped_edge);
-    } else if (it->src != flipped_edge.src || it->dst != flipped_edge.dst) {
+    } else if (it->get_src() != flipped_edge.get_src() ||
+               it->get_dst() != flipped_edge.get_dst()) {
       missing_edges.push_back(flipped_edge);
     } else if (it->weight != edge.weight) {
       edge.weight = comp(edge, *it) ? edge.weight : it->weight;
@@ -161,7 +231,7 @@ std::size_t add_missing_local_edges(WEdgeList& edges,
   }
   if (!missing_edges.empty()) {
     edges.insert(edges.end(), missing_edges.begin(), missing_edges.end());
-    std::sort(edges.begin(), edges.end(), SrcDstWeightOrder{});
+    std::sort(edges.begin(), edges.end(), SrcDstWeightOrder<WEdge>{});
   }
   return missing_edges.size();
 }
@@ -174,10 +244,13 @@ std::uint64_t allreduce_sum(const std::uint64_t& send_elem, MPIComm comm) {
 
 } // namespace internal
 
+// assumption: Vertices do not span multiple PEs
+// assumption: Edges are already (locally) sorted
 void repair_edges(WEdgeList& edges, const VertexRange& local_range,
                   MPIComm comm) {
   using namespace internal;
-  std::sort(edges.begin(), edges.end(), SrcDstOrder{});
+  memory_stats().print("before repair");
+  ips4o::parallel::sort(edges.begin(), edges.end(), SrcDstOrder<WEdge>{});
 
   const auto ranges = get_ranges(local_range, comm);
 
@@ -186,13 +259,26 @@ void repair_edges(WEdgeList& edges, const VertexRange& local_range,
   //     std::cout << vmin << ", " << vmax << std::endl;
   //   }
   // }
-  auto remote_edges = get_remote_edges_pointing_to_pe(edges, ranges, comm);
-  std::sort(remote_edges.begin(), remote_edges.end(), SrcDstOrder{});
   const std::uint64_t num_duplicates = remove_duplicates(edges);
+  auto remote_edges =
+      get_remote_edges_pointing_to_pe_pseudo_inplace(edges, ranges, comm);
+  memory_stats().print("after exchanging edges");
+  ips4o::parallel::sort(remote_edges.begin(), remote_edges.end(),
+                        DstSrcOrder<WEdge>{});
+  memory_stats().print("after exchanging edges I");
+  memory_stats().print("after exchanging edges II");
   const std::uint64_t num_missing_local_edges =
       add_missing_local_edges(edges, local_range);
+  memory_stats().print("after exchanging edges III");
+  // auto copy = edges;
   const std::uint64_t num_missing_edges =
-      add_missing_edges(edges, remote_edges);
+      add_missing_edges_via_merging(edges, remote_edges);
+  // const std::uint64_t num_missing_edges_ =
+  //     add_missing_edges(copy, remote_edges);
+  // if(copy != edges || num_missing_edges != num_missing_edges_) {
+  //   std::abort();
+  // }
+  memory_stats().print("after exchanging edges IV");
 
   std::stringstream sstream;
   sstream << "rank: " << comm.rank

@@ -17,7 +17,7 @@ get_rhg(std::size_t log_n, std::size_t avg_degree, double gamma,
       UniformRandomWeightGenerator<VId, Weight, WEdge>{wgen_config},
       1ull << log_n, gamma, avg_degree);
   remove_upside_down(res.first, res.second);
-  std::sort(res.first.begin(), res.first.end(), SrcDstOrder{});
+  std::sort(res.first.begin(), res.first.end(), SrcDstOrder<WEdge>{});
   repair_edges(res.first, res.second, comm);
   return res;
 }

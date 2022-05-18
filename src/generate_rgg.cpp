@@ -26,7 +26,7 @@ get_rgg2D(std::size_t log_n, double radius,
 double compute_radius(std::size_t log_n, std::size_t log_m) {
   const double n = 1ull << log_n;
   const double m = 1ull << log_m;
-  const double radius = (1 / n) * std::sqrt(m / M_PI);
+  const double radius = (1 / n) * std::sqrt(2*m / M_PI);
   return radius;
 }
 

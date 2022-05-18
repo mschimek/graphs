@@ -39,8 +39,7 @@ WEdgeList get_rmat_edges(const RMatParams& params,
     r.init(depth);
     edges.reserve(m);
     wgen_config.seed = 2 * seed;
-    WeightGenerator<VId, Weight, WEdge> weight_generator{
-        wgen_config};
+    WeightGenerator<VId, Weight, WEdge> weight_generator{wgen_config};
     auto process_edge = [&](RMat::node src, RMat::node dst) {
       if (src == dst)
         return;
@@ -70,37 +69,6 @@ WEdgeList get_rmat_edges(const RMatParams& params,
   return edges;
 }
 
-//// WEdgeList get_rmat_edges(const RMatParams& params, VId v_begin,
-////                                   VId v_end, bool remove_duplicates) {
-////   mpi::MPIContext ctx;
-////   auto edges = get_rmat_edges(params);
-////
-////   VertexRange own_range{v_begin, v_end, ctx.rank()};
-////   const std::vector<VertexRange> ranges = mpi::allgather(own_range);
-////   SEQ_EX(ctx, {
-////     PRINT_VECTOR(edges);
-////     PRINT_VECTOR(ranges);
-////   });
-////   PEIDToVector<WEdge> pe_edges_send;
-////   PEIDToVector<WEdge> pe_edges_recv;
-////   for (const auto& edge : edges) {
-////     const auto [from, to, w] = edge;
-////     pe_edges_send[get_pe(from, ranges)].push_back(edge);
-////     pe_edges_send[get_pe(to, ranges)].emplace_back(to, from,
-////                                                    w);  // reverse edge
-////   }
-////   edges.clear();
-////   mpi::sparse_all_to_all(pe_edges_send, pe_edges_recv, ctx);
-////   pe_edges_send.clear();
-////   edges = mpi::make_contiguous(pe_edges_recv);
-////
-////   if (remove_duplicates) {
-////     std::sort(edges.begin(), edges.end(), LexicOrder{});
-////     edges.erase(std::unique(edges.begin(), edges.end()), edges.end());
-////   }
-////   return edges;
-//// }
-////
 std::pair<WEdgeList, VertexRange>
 get_rmat_edges_evenly_distributed(const RMatParams& params,
                                   WeightGeneratorConfig<Weight> wgen_config,
@@ -112,8 +80,8 @@ get_rmat_edges_evenly_distributed(const RMatParams& params,
   MPI_Type_commit(&mpi_edge_type);
   std::mt19937_64 gen(comm.rank * 100);
   auto SrcDstSort = [](const WEdge& lhs, const WEdge& rhs) {
-    return std::tie(lhs.src, lhs.dst, lhs.weight) <
-           std::tie(rhs.src, rhs.dst, lhs.weight);
+    return std::make_tuple(lhs.get_src(), lhs.get_dst(), lhs.get_weight()) <
+           std::make_tuple(rhs.get_src(), rhs.get_dst(), lhs.get_weight());
   };
   const int num_levels = 2;
   Ams::sortLevel(mpi_edge_type, edges, num_levels, gen, comm.comm, SrcDstSort);
@@ -124,13 +92,13 @@ get_rmat_edges_evenly_distributed(const RMatParams& params,
   Ams::sortLevel(mpi_edge_type, edges, num_levels, gen, comm.comm, SrcDstSort);
   MPI_Type_free(&mpi_edge_type);
 
-  const VId v_min = !edges.empty() ? edges.front().src : -1;
-  const VId v_max = !edges.empty() ? edges.back().src : -1;
+  const VId v_min = !edges.empty() ? edges.front().get_src() : -1;
+  const VId v_max = !edges.empty() ? edges.back().get_src() : -1;
   auto res = std::make_pair(std::move(edges), VertexRange{v_min, v_max});
 
-  //remove_upside_down(res.first, res.second);
-  //std::sort(res.first.begin(), res.first.end(), SrcDstOrder{});
-  //repair_edges(res.first, res.second, comm);
+  // remove_upside_down(res.first, res.second);
+  // std::sort(res.first.begin(), res.first.end(), SrcDstOrder{});
+  // repair_edges(res.first, res.second, comm);
   return res;
 }
 } // namespace graphs

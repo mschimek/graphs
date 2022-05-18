@@ -23,7 +23,7 @@ int main() {
 
   auto [edges, range] = graphs::get_rhg(logn, avg_deg, power_law);
   std::sort(edges.begin(), edges.end(), [](const auto& lhs, const auto& rhs) {
-    return std::tie(lhs.src, lhs.dst) < std::tie(rhs.src, rhs.dst);
+    return std::make_pair(lhs.get_src(), lhs.get_dst()) < std::make_pair(rhs.get_src(), rhs.get_dst());
   });
   auto is_local = [&](const auto& v) {
     return range.first <= v && v <= range.second;
@@ -31,7 +31,7 @@ int main() {
 
   const auto num_local_edges =
       std::count_if(edges.begin(), edges.end(), [&](const auto& edge) {
-        return is_local(edge.src) && is_local(edge.dst);
+        return is_local(edge.get_src()) && is_local(edge.get_dst());
       });
 
   constexpr bool output_edges = false;

@@ -9,22 +9,22 @@
 int main() {
   MPI_Init(nullptr, nullptr);
   graphs::MPIComm comm;
-  auto [edges, range] = graphs::get_rhg(12, 3, 8);
+  std::size_t log_n = 20ul + std::log2(comm.size);
+  std::size_t log_m = 24ul + std::log2(comm.size);
+  auto [edges, range] = graphs::get_rgg2D(log_n, log_m);
   // std::sort(edges.begin(), edges.end(), [](const auto& lhs, const auto& rhs)
   // {
   //   return lhs.weight < rhs.weight;
   // });
   //
-  std::sort(edges.begin(), edges.end(), [](const auto& lhs, const auto& rhs) {
-    return std::tie(lhs.src, lhs.dst) < std::tie(rhs.src, rhs.dst);
-  });
+  std::sort(edges.begin(), edges.end(), graphs::SrcDstWeightOrder<graphs::WEdge>{});
   auto is_local = [&](const auto& v) {
     return range.first <= v && v <= range.second;
   };
 
   const auto num_local_edges =
       std::count_if(edges.begin(), edges.end(), [&](const auto& edge) {
-        return is_local(edge.src) && is_local(edge.dst);
+        return is_local(edge.get_src()) && is_local(edge.get_dst());
       });
 
   graphs::execute_in_order(comm, [&]() {

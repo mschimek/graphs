@@ -1,5 +1,6 @@
 #pragma once
 
+#include "include/edge_types.hpp"
 #include "include/weight_generators.hpp"
 #include <cstdint>
 #include <iostream>
@@ -11,8 +12,8 @@
 
 namespace graphs {
 using VertexRange = std::pair<std::size_t, std::size_t>;
-using VId = uint64_t;
-using Weight = uint32_t;
+using VId = std::uint64_t;
+using Weight = std::uint8_t;
 
 struct MPIComm {
   MPIComm(MPI_Comm comm_) : comm{comm_} {
@@ -25,44 +26,47 @@ struct MPIComm {
   int size;
 };
 
-struct WEdge {
-  VId src;
-  VId dst;
-  Weight weight;
-  WEdge() = default;
-  WEdge(std::uint64_t src, std::uint64_t dst, std::uint32_t weight)
-      : src{src}, dst{dst}, weight{weight} {}
-  friend std::ostream& operator<<(std::ostream& out, const WEdge& edge) {
-    return out << "(" << edge.src << ", " << edge.dst << ", " << edge.weight
-               << ")";
-  }
-  struct MPI_Type {
-    MPI_Type() {
-      MPI_Type_contiguous(sizeof(WEdge), MPI_BYTE, &mpi_datatype_);
-      MPI_Type_commit(&mpi_datatype_);
-    }
-    ~MPI_Type() { MPI_Type_free(&mpi_datatype_); }
-    MPI_Datatype get_mpi_type() const { return mpi_datatype_; }
-    MPI_Datatype mpi_datatype_;
-  };
-};
+using WEdge = WEdge14;
+using WEdgeList = std::vector<WEdge>;
 
-struct SrcDstOrder {
-  bool operator()(const WEdge& lhs, const WEdge& rhs) const {
-    return std::tie(lhs.src, lhs.dst) < std::tie(rhs.src, rhs.dst);
+template <typename EdgeType> struct SrcDstOrder {
+  bool operator()(const EdgeType& lhs, const EdgeType& rhs) const {
+    return std::make_pair(lhs.get_src(), lhs.get_dst()) <
+           std::make_pair(rhs.get_src(), rhs.get_dst());
   }
 };
 
-struct SrcDstWeightOrder {
-  bool operator()(const WEdge& lhs, const WEdge& rhs) const {
-    return std::tie(lhs.src, lhs.dst, lhs.weight) <
-           std::tie(rhs.src, rhs.dst, rhs.weight);
+template <typename EdgeType> struct DstSrcOrder {
+  bool operator()(const EdgeType& lhs, const EdgeType& rhs) const {
+    return std::make_tuple(lhs.get_dst(), lhs.get_src()) <
+           std::make_tuple(rhs.get_dst(), rhs.get_src());
+  }
+};
+
+template <typename EdgeType> struct DstSrcWeightOrder {
+  bool operator()(const EdgeType& lhs, const EdgeType& rhs) const {
+    return std::make_tuple(lhs.get_dst(), lhs.get_src(), lhs.get_weight()) <
+           std::make_tuple(rhs.get_dst(), rhs.get_src(), rhs.get_weight());
+  }
+};
+
+template <typename EdgeType> struct SrcDstWeightOrder {
+  bool operator()(const EdgeType& lhs, const EdgeType& rhs) const {
+    return std::make_tuple(lhs.get_src(), lhs.get_dst(), lhs.get_weight()) <
+           std::make_tuple(rhs.get_src(), rhs.get_dst(), rhs.get_weight());
+  }
+};
+
+template <typename EdgeType> struct SrcDstWeightEqual {
+  bool operator()(const EdgeType& lhs, const EdgeType& rhs) const {
+    return std::make_tuple(lhs.get_src(), lhs.get_dst(), lhs.get_weight()) ==
+           std::make_tuple(rhs.get_src(), rhs.get_dst(), rhs.get_weight());
   }
 };
 
 inline bool operator==(const WEdge& lhs, const WEdge& rhs) {
-  return std::tie(lhs.src, lhs.dst, lhs.weight) ==
-         std::tie(rhs.src, rhs.dst, rhs.weight);
+  return std::make_tuple(lhs.get_src(), lhs.get_dst(), lhs.get_weight()) ==
+         std::make_tuple(rhs.get_src(), rhs.get_dst(), rhs.get_weight());
 }
 
 struct RMatParams {
@@ -75,7 +79,6 @@ struct RMatParams {
   double a = 0.57, b = 0.19, c = 0.19;
 };
 
-using WEdgeList = std::vector<WEdge>;
 
 std::pair<std::vector<WEdge>, VertexRange> get_gnm(
     std::size_t log_n, std::size_t log_m,
@@ -122,16 +125,22 @@ std::pair<std::vector<WEdge>, VertexRange> get_grid3D(
     WeightGeneratorConfig<Weight> wgen_config = WeightGeneratorConfig<Weight>{},
     MPIComm comm = MPIComm{});
 
-std::pair<WEdgeList, VertexRange>
-get_rmat_edges_evenly_distributed(const RMatParams& params,
-     WeightGeneratorConfig<Weight> wgen_config = WeightGeneratorConfig<Weight>{},                             bool remove_duplicates = true,
-                                  MPIComm comm = MPIComm{});
+std::pair<WEdgeList, VertexRange> get_rmat_edges_evenly_distributed(
+    const RMatParams& params,
+    WeightGeneratorConfig<Weight> wgen_config = WeightGeneratorConfig<Weight>{},
+    bool remove_duplicates = true, MPIComm comm = MPIComm{});
 
-enum class GraphFormat { MatrixMarket, Snap };
+enum class GraphFormat { MatrixMarket, Snap, Binary };
 std::pair<std::vector<WEdge>, VertexRange>
 read_weighted_graph(const std::string& filename, GraphFormat format,
                     MPIComm comm = MPIComm{});
 std::pair<std::vector<WEdge>, VertexRange>
 read_unweighted_graph(const std::string& filename, GraphFormat format,
                       MPIComm comm = MPIComm{});
+
+void add_weight_and_back_edges(const std::string& infile,
+                               const std::string& outfile, Weight max_weight,
+                               std::size_t num_VId_bytes);
 }; // namespace graphs
+
+#include "include/template_functions.hpp"

@@ -81,12 +81,12 @@ inline std::pair<WEdgeList, VertexRange> read_from_file(
   int tag = 100000;
   std::mt19937_64 gen(comm.rank * 100);
   auto SrcDstSort = [](const WEdge& lhs, const WEdge& rhs) {
-    return std::tie(lhs.src, lhs.dst) < std::tie(rhs.src, rhs.dst);
+    return std::make_pair(lhs.get_src(), lhs.get_dst()) < std::make_pair(rhs.get_src(), rhs.get_dst());
   };
   RQuick::sort(mpi_edge_type, edges, tag, gen, comm.comm, SrcDstSort);
   MPI_Type_free(&mpi_edge_type);
-  VId v_min = edges.empty() ? -1 : edges.front().src;
-  VId v_max = edges.empty() ? -1 : edges.back().src;
+  VId v_min = edges.empty() ? -1 : edges.front().get_src();
+  VId v_max = edges.empty() ? -1 : edges.back().get_src();
   return std::make_pair(std::move(edges), VertexRange{v_min, v_max});
 }
 }  // namespace graphs::MatrixMarket

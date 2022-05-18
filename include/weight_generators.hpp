@@ -10,7 +10,7 @@ namespace graphs {
 template <typename Weight> struct WeightGeneratorConfig {
   WeightGeneratorConfig() = default;
   Weight min_weight = 1;
-  Weight max_weight = 100'000;
+  Weight max_weight = 254;
   bool use_random_weights = true;
   std::size_t seed = 1;
 };
@@ -23,7 +23,7 @@ struct WeightGenerator {
       : config_{min_weight, max_weight, true} {}
   WeightGenerator(Weight max_weight) : config_{1, max_weight, true} {}
   WeightGenerator(WeightGeneratorConfig<Weight> config) : config_{config} {}
-  WeightGenerator() : WeightGenerator(1, 100'000) {}
+  WeightGenerator() : WeightGenerator(1, 254) {}
 
   Weight operator()(Vertex src, Vertex dst) const {
     return get_random_weight(src, dst, config_.min_weight, config_.max_weight);
@@ -66,14 +66,15 @@ private:
                   "Vertex type must be an integer.");
     static_assert(std::is_integral_v<Weight>,
                   "Weight type must be an integer.");
-    Weight res = 0;
+    std::uint64_t res = 0;
     const Vertex offset = 111;
     if constexpr (sizeof(Vertex) <= 4) {
       res = hash32((hash32(src + offset) + hash32(dst + offset)));
     } else {
       res = hash64(hash64(src + offset) + hash64(dst + offset));
     }
-    return std::max((res % max_weight), min_weight);
+    res = std::max((res % max_weight), static_cast<std::uint64_t>(min_weight));
+    return static_cast<Weight>(res);
   }
 };
 

@@ -25,7 +25,7 @@ get_grid2D(std::size_t log_x, std::size_t log_y, double p, bool is_periodic,
   auto res = gen.Generate2DGrid(
       UniformRandomWeightGenerator<VId, Weight, WEdge>{wgen_config},
       1ull << log_x, 1ull << log_y, p, is_periodic, square_power_of_two);
-  std::sort(res.first.begin(), res.first.end(), SrcDstOrder{});
+  std::sort(res.first.begin(), res.first.end(), SrcDstOrder<WEdge>{});
   // graphs::execute_in_order(comm, [&]() {
   //   std::cout << res.second.first << " " << res.second.second << std::endl;
   //   for (const auto& edge : res.first) {
@@ -33,7 +33,7 @@ get_grid2D(std::size_t log_x, std::size_t log_y, double p, bool is_periodic,
   //   }
   // });
   remove_upside_down(res.first, res.second);
-  std::sort(res.first.begin(), res.first.end(), SrcDstOrder{});
+  std::sort(res.first.begin(), res.first.end(), SrcDstOrder<WEdge>{});
   repair_edges(res.first, res.second, comm);
   return res;
 }
@@ -56,7 +56,7 @@ get_grid3D(std::size_t log_x, std::size_t log_y, std::size_t log_z, double p,
       UniformRandomWeightGenerator<VId, Weight, WEdge>{wgen_config},
       1ull << log_x, 1ull << log_y, 1ull << log_z, p, is_periodic,
       cube_power_of_two);
-  std::sort(res.first.begin(), res.first.end(), SrcDstOrder{});
+  std::sort(res.first.begin(), res.first.end(), SrcDstOrder<WEdge>{});
   // graphs::execute_in_order(comm, [&]() {
   //   std::cout << res.second.first << " " << res.second.second << std::endl;
   //   for (const auto& edge : res.first) {
@@ -64,7 +64,7 @@ get_grid3D(std::size_t log_x, std::size_t log_y, std::size_t log_z, double p,
   //   }
   // });
   remove_upside_down(res.first, res.second);
-  std::sort(res.first.begin(), res.first.end(), SrcDstOrder{});
+  std::sort(res.first.begin(), res.first.end(), SrcDstOrder<WEdge>{});
   repair_edges(res.first, res.second, comm);
   return res;
 }
