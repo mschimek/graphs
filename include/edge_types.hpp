@@ -5,6 +5,41 @@
 
 namespace graphs {
 
+struct Edge {
+  Edge() = default;
+  Edge(std::uint64_t src, std::uint64_t dst) {
+    set_src(src);
+    set_dst(dst);
+  }
+  std::uint64_t src;
+  std::uint64_t dst;
+  std::uint64_t get_src() const {
+    return src;
+  }
+  std::uint64_t get_dst() const {
+    return dst;
+  }
+
+  void set_src(uint64_t src) {
+    this->src = src;
+  }
+  void set_dst(uint64_t dst) {
+    this->dst = dst;
+  }
+  struct MPI_Type {
+    MPI_Type() {
+      MPI_Type_contiguous(sizeof(Edge), MPI_BYTE, &mpi_datatype_);
+      MPI_Type_commit(&mpi_datatype_);
+    }
+    ~MPI_Type() { MPI_Type_free(&mpi_datatype_); }
+    MPI_Datatype get_mpi_type() const { return mpi_datatype_; }
+    MPI_Datatype mpi_datatype_;
+  };
+  friend std::ostream& operator<<(std::ostream& out, const Edge& edge) {
+    return out << "(" << edge.get_src() << ", " << edge.get_dst() << ")";
+  }
+};
+
 struct WEdge14 {
   WEdge14() = default;
   WEdge14(std::uint64_t src, std::uint64_t dst, std::uint8_t weight) {

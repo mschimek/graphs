@@ -138,7 +138,10 @@ std::pair<std::vector<WEdge>, VertexRange>
 read_unweighted_graph(const std::string& filename, GraphFormat format,
                       MPIComm comm = MPIComm{});
 
-void add_weight_and_back_edges(const std::string& infile,
+void add_weight_and_back_edges_in_directed_graph(const std::string& infile,
+                               const std::string& outfile, Weight max_weight,
+                               std::size_t num_VId_bytes);
+void add_weight_and_back_edges_in_undirected_graph(const std::string& infile,
                                const std::string& outfile, Weight max_weight,
                                std::size_t num_VId_bytes);
 }; // namespace graphs

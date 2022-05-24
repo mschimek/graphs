@@ -13,7 +13,7 @@ template <typename T> void append(std::vector<char>& data, T t, std::size_t num_
   std::memcpy(dest, &t, num_bytes);
 }
 bool process_chunk(std::ifstream& in, std::ofstream& out,
-                   std::size_t chunk_size, Weight max_size, std::size_t num_bytes_vid) {
+                   std::size_t chunk_size, Weight max_size, std::size_t num_bytes_vid, bool is_graph_directed) {
   static std::mt19937 gen(0);
   static std::uniform_int_distribution<std::uint8_t> distrib(1, max_size);
   std::string line;
@@ -30,6 +30,9 @@ bool process_chunk(std::ifstream& in, std::ofstream& out,
     if (src == dst) {
       continue;
     }
+    if(!is_graph_directed && src > dst) {
+      continue;
+    }
     std::uint8_t w = distrib(gen);
     append(data, src, num_bytes_vid);
     append(data, dst, num_bytes_vid);
@@ -41,13 +44,24 @@ bool process_chunk(std::ifstream& in, std::ofstream& out,
   out.write(data.data(), data.size());
   return has_next_line;
 }
-void add_weight_and_back_edges(const std::string& infile,
+void add_weight_and_back_edges_in_directed_graph(const std::string& infile,
                                const std::string& outfile, Weight max_weight,
                                std::size_t num_VId_bytes) {
   std::ifstream in{infile.c_str(), std::ios::in};
   std::ofstream out = std::ofstream(
       outfile.c_str(), std::ios::out | std::ios::binary | std::ios::app);
-  while (process_chunk(in, out, 10'000'000, max_weight, num_VId_bytes))
+  const bool is_graph_directed = true;
+  while (process_chunk(in, out, 10'000'000, max_weight, num_VId_bytes, is_graph_directed))
+    ;
+}
+void add_weight_and_back_edges_in_undirected_graph(const std::string& infile,
+                               const std::string& outfile, Weight max_weight,
+                               std::size_t num_VId_bytes) {
+  std::ifstream in{infile.c_str(), std::ios::in};
+  std::ofstream out = std::ofstream(
+      outfile.c_str(), std::ios::out | std::ios::binary | std::ios::app);
+  const bool is_graph_directed = false;
+  while (process_chunk(in, out, 10'000'000, max_weight, num_VId_bytes, is_graph_directed))
     ;
 }
 

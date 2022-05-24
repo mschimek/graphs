@@ -82,6 +82,6 @@ target_link_libraries(generate_rgg    PRIVATE graphs_base_target graphs)
 target_link_libraries(generate_rhg    PRIVATE graphs_base_target graphs)
 target_link_libraries(generate_grid   PRIVATE graphs_base_target graphs)
 target_link_libraries(generate_grid3d PRIVATE graphs_base_target graphs)
-target_link_libraries(process_file PRIVATE graphs_base_target graphs tlx) # depends on tlx in KaDiS ... should be fixed
+target_link_libraries(process_file PRIVATE graphs_base_target graphs tlx kadis) # depends on tlx in KaDiS ... should be fixed
 target_link_libraries(read_weighted_binary_file PRIVATE graphs_base_target graphs tlx kadis) # depends on tlx in KaDiS ... should be fixed
 
