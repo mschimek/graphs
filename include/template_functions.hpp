@@ -15,7 +15,7 @@ namespace graphs {
 inline std::size_t compute_number_edges(const std::string& infile,
                                         std::size_t num_VId_bytes, std::size_t num_weight_bytes,
                                         MPIComm comm = MPIComm{}) {
-  std::cout << "num vid: " << num_VId_bytes << " num weight: " << num_weight_bytes << std::endl;
+  //std::cout << "num vid: " << num_VId_bytes << " num weight: " << num_weight_bytes << std::endl;
   std::ifstream in{infile.c_str(), std::ios::binary | std::ios::in};
   std::ifstream end_of_file(infile.c_str(), std::ios::binary | std::ios::ate);
   std::fstream::pos_type file_size;
@@ -71,7 +71,7 @@ std::size_t read_weighted_binary(const std::string& infile, OutIt out_it,
     it += num_VId_bytes;
     std::memcpy(&w, it, num_weight_bytes);
     EdgeType e;
-    std::cout << src << " " << dst << " " << w << std::endl;
+    //std::cout << src << " " << dst << " " << w << std::endl;
     e.set_src(src);
     e.set_dst(dst);
     e.set_weight(w);
@@ -321,7 +321,7 @@ read_weighted_binaries(const Infiles& infiles, std::size_t num_VId_bytes, std::s
   for (const auto& infile : infiles) {
     num_own_edges += compute_number_edges(infile, num_VId_bytes, num_weight_bytes, comm);
   }
-  std::cout << num_own_edges << std::endl;
+  //std::cout << num_own_edges << std::endl;
   std::pair<Container, VertexRange> res;
   Container& edges = res.first;
   VertexRange& vertex_range = res.second;

@@ -63,7 +63,8 @@ add_library(graphs STATIC
   src/generate_grid.cpp
   src/read_and_process_from_file.cpp
   src/utils.cpp)
-target_link_libraries(graphs PRIVATE graphs_base_target kadis generators rmat)
+target_link_libraries(graphs PRIVATE graphs_base_target generators rmat)
+target_link_libraries(graphs PUBLIC kadis)
 target_include_directories(graphs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(example app/example.cpp)
