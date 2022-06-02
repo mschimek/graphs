@@ -159,6 +159,8 @@ void transform_undirected_graph_to_binary(const std::string& infile,
                                std::size_t num_VId_bytes, std::size_t num_weight_bytes);
 
 void read_sort_write(const Configs& config);
+
+std::vector<WEdge> redistribute(const std::vector<WEdge>& local_data, std::uint64_t num_edges, MPIComm comm);
 }; // namespace graphs
 
 #include "include/template_functions.hpp"
