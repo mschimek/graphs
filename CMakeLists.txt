@@ -75,6 +75,7 @@ add_executable(generate_grid app/generate_grid.cpp)
 add_executable(generate_grid3d app/generate_grid3d.cpp)
 add_executable(process_file app/process_file.cpp)
 add_executable(read_weighted_binary_file app/read_weighted_binary_file.cpp)
+add_executable(read_sort_write app/read_sort_write.cpp)
 target_link_libraries(example PRIVATE graphs_base_target graphs)
 target_link_libraries(generate_gnm    PRIVATE graphs_base_target graphs)
 target_link_libraries(generate_rmat   PRIVATE graphs_base_target graphs)
@@ -84,4 +85,5 @@ target_link_libraries(generate_grid   PRIVATE graphs_base_target graphs)
 target_link_libraries(generate_grid3d PRIVATE graphs_base_target graphs)
 target_link_libraries(process_file PRIVATE graphs_base_target graphs tlx kadis) # depends on tlx in KaDiS ... should be fixed
 target_link_libraries(read_weighted_binary_file PRIVATE graphs_base_target graphs tlx kadis) # depends on tlx in KaDiS ... should be fixed
+target_link_libraries(read_sort_write PRIVATE graphs_base_target graphs tlx kadis) # depends on tlx in KaDiS ... should be fixed
 

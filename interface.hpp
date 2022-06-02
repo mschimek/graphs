@@ -69,6 +69,16 @@ inline bool operator==(const WEdge& lhs, const WEdge& rhs) {
          std::make_tuple(rhs.get_src(), rhs.get_dst(), rhs.get_weight());
 }
 
+struct Configs {
+  std::string infile;
+  std::string outfile;
+  std::size_t num_vid_bytes_in;
+  std::size_t num_weight_bytes_in;
+  std::size_t num_vid_bytes_out;
+  std::size_t num_weight_bytes_out;
+  bool sort_input;
+};
+
 struct RMatParams {
   RMatParams(std::size_t logn, std::size_t logm) : log_n(logn), log_m(logm) {}
   RMatParams(std::size_t logn, std::size_t logm, double a, double b, double c)
@@ -140,10 +150,15 @@ read_unweighted_graph(const std::string& filename, GraphFormat format,
 
 void add_weight_and_back_edges_in_directed_graph(const std::string& infile,
                                const std::string& outfile, Weight max_weight,
-                               std::size_t num_VId_bytes);
+                               std::size_t num_VId_bytes, std::size_t num_weight_bytes);
 void add_weight_and_back_edges_in_undirected_graph(const std::string& infile,
                                const std::string& outfile, Weight max_weight,
-                               std::size_t num_VId_bytes);
+                               std::size_t num_VId_bytes, std::size_t num_weight_bytes);
+void transform_undirected_graph_to_binary(const std::string& infile,
+                               const std::string& outfile, Weight max_weight,
+                               std::size_t num_VId_bytes, std::size_t num_weight_bytes);
+
+void read_sort_write(const Configs& config);
 }; // namespace graphs
 
 #include "include/template_functions.hpp"
