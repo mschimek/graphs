@@ -105,6 +105,16 @@ std::pair<std::vector<WEdge>, VertexRange> get_rgg2D(
     WeightGeneratorConfig<Weight> wgen_config = WeightGeneratorConfig<Weight>{},
     MPIComm comm = MPIComm{});
 
+std::pair<std::vector<WEdge>, VertexRange> get_rgg3D(
+    std::size_t log_n, double radius,
+    WeightGeneratorConfig<Weight> wgen_config = WeightGeneratorConfig<Weight>{},
+    MPIComm comm = MPIComm{});
+
+std::pair<std::vector<WEdge>, VertexRange> get_rgg3D(
+    std::size_t log_n, std::size_t log_m,
+    WeightGeneratorConfig<Weight> wgen_config = WeightGeneratorConfig<Weight>{},
+    MPIComm comm = MPIComm{});
+
 std::pair<std::vector<WEdge>, VertexRange> get_rhg(
     std::size_t log_n, std::size_t avg_degree, double gamma,
     WeightGeneratorConfig<Weight> wgen_config = WeightGeneratorConfig<Weight>{},

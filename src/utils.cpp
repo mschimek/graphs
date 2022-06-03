@@ -278,6 +278,7 @@ void repair_edges(WEdgeList& edges, const VertexRange& local_range,
   // if(copy != edges || num_missing_edges != num_missing_edges_) {
   //   std::abort();
   // }
+  remove_duplicates(edges);
   memory_stats().print("after exchanging edges IV");
 
   std::stringstream sstream;
