@@ -27,7 +27,7 @@ get_rhg_explicit_num_edges(std::size_t log_n, std::size_t log_m, double gamma,
                            WeightGeneratorConfig<Weight> wgen_config,
                            MPIComm comm) {
   kagen::KaGen gen(comm.rank, comm.size);
-  const std::size_t avg_degree = (1ull << log_m) / (1ull << log_n);
+  const std::size_t avg_degree = 2ull * (1ull << log_m) / (1ull << log_n);
   return get_rhg(log_n, avg_degree, gamma, wgen_config, comm);
 }
 } // namespace graphs
