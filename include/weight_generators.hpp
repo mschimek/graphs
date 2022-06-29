@@ -7,11 +7,13 @@
 
 namespace graphs {
 
+enum class DistanceType { Random, Euclidean, SquaredEuclidean };
+
 template <typename Weight> struct WeightGeneratorConfig {
   WeightGeneratorConfig() = default;
   Weight min_weight = 1;
   Weight max_weight = 254;
-  bool use_random_weights = true;
+  DistanceType distance_type = DistanceType::Random;
   std::size_t seed = 1;
 };
 
@@ -20,8 +22,9 @@ struct WeightGenerator {
   using EdgeType = Edge;
   using WeightType = Weight;
   WeightGenerator(Weight min_weight, Weight max_weight)
-      : config_{min_weight, max_weight, true} {}
-  WeightGenerator(Weight max_weight) : config_{1, max_weight, true} {}
+      : config_{min_weight, max_weight, DistanceType::Random} {}
+  WeightGenerator(Weight max_weight)
+      : config_{1, max_weight, DistanceType::Random} {}
   WeightGenerator(WeightGeneratorConfig<Weight> config) : config_{config} {}
   WeightGenerator() : WeightGenerator(1, 254) {}
 
@@ -82,26 +85,56 @@ template <typename Vertex, typename Weight, typename Edge>
 struct UniformRandomWeightGenerator {
   using EdgeType = Edge;
   using WeightType = Weight;
-  UniformRandomWeightGenerator(WeightGeneratorConfig<Weight> config) : config_{config}, gen{config_.seed}, distribution(config_.min_weight, config_.max_weight) {}
+  UniformRandomWeightGenerator(WeightGeneratorConfig<Weight> config)
+      : config_{config}, gen{config_.seed},
+        distribution(config_.min_weight, config_.max_weight) {}
 
-  Weight operator()(Vertex src, Vertex dst) {
-      return distribution(gen);
-  }
+  Weight operator()(Vertex src, Vertex dst) { return distribution(gen); }
 
-  Weight operator()(Vertex src, Vertex dst, double dist_factor) {
-    if (config_.use_random_weights) {
+  Weight operator()(Vertex src, Vertex dst, double squared_euclidean_dist,
+                    double radius) {
+    switch (config_.distance_type) {
+    case DistanceType::Random: {
+
+      // if (rank == 0) {
+      //   std::cout << "random: " << std::endl;
+      // }
       return distribution(gen);
     }
-    const Weight w = std::min(
-        static_cast<Weight>(dist_factor * get_max_weight()), get_max_weight());
-    return std::max(get_min_weight(), w);
+    case DistanceType::Euclidean: {
+      const double distance = std::sqrt(squared_euclidean_dist);
+      const double dist_factor = distance / radius;
+      const auto w = get_weight(dist_factor);
+      // if (rank == 0) {
+      //   std::cout << "euclidean: " << distance << " factor: " << dist_factor
+      //             << " radius: " << radius << " w: " << int(w) << std::endl;
+      // }
+      return w;
+    }
+    case DistanceType::SquaredEuclidean: {
+      const double dist_factor = squared_euclidean_dist / (radius * radius);
+      const auto w = get_weight(dist_factor);
+      // if (rank == 0) {
+      //   std::cout << "sq_euclidean: " << squared_euclidean_dist
+      //             << " factor: " << dist_factor << " radius: " << radius
+      //             << " w: " << int(w) << std::endl;
+      // }
+      return w;
+    }
+    }
+    return get_max_weight();
   }
   Weight get_min_weight() const { return config_.min_weight; }
   Weight get_max_weight() const { return config_.max_weight; }
 
 private:
+  Weight get_weight(double dist_factor) {
+    const Weight w = std::min(
+        static_cast<Weight>(dist_factor * get_max_weight()), get_max_weight());
+    return std::max(get_min_weight(), w);
+  }
   WeightGeneratorConfig<Weight> config_;
-  std::mt19937 gen; //Standard mersenne_twister_engine seeded with rd()
+  std::mt19937 gen; // Standard mersenne_twister_engine seeded with rd()
   std::uniform_int_distribution<Weight> distribution;
 };
 } // namespace graphs
