@@ -197,7 +197,8 @@ std::size_t add_missing_edges_via_merging(WEdgeList& edges,
   }
   if (!missing_edges.empty()) {
     edges.insert(edges.end(), missing_edges.begin(), missing_edges.end());
-    ips4o::parallel::sort(edges.begin(), edges.end(), SrcDstWeightOrder<WEdge>{});
+    ips4o::parallel::sort(edges.begin(), edges.end(),
+                          SrcDstWeightOrder<WEdge>{});
   }
   return missing_edges.size();
 }
@@ -304,5 +305,55 @@ std::size_t get_next_pow_two_with_exp_divisible_by(std::size_t i,
   const std::size_t offset = remainder == 0 ? 0 : (divisor - remainder);
   const std::size_t exponent_divisible_by = exponent + offset;
   return 1ull << exponent_divisible_by;
+}
+
+std::vector<WEdge14> get_local_weighted_edges(
+    UniformRandomWeightGenerator<VId, Weight, WEdge>& w_gen,
+    const kagen::KaGenResult& kagen_result) {
+  const auto& [edges, vertex_range] = kagen_result;
+  std::vector<WEdge14> w_edges;
+  w_edges.reserve(edges.size());
+  for (const auto& [src, dst] : edges) {
+    w_edges.emplace_back(src, dst, w_gen(src, dst));
+  }
+  return w_edges;
+}
+
+void set_global_weighted_edges(WEdgeList& remote_edges, WEdgeList& own_edges) {
+  ips4o::parallel::sort(remote_edges.begin(), remote_edges.end(),
+                        DstSrcOrder<WEdge14>{});
+  if (remote_edges.size() != own_edges.size()) {
+    std::cout << "edges do not have equal size!" << std::endl;
+    std::abort();
+  }
+  auto comp = SrcDstOrder<WEdge>{};
+  for (std::size_t i = 0; i < own_edges.size(); ++i) {
+    auto& edge = own_edges[i];
+    const auto& remote_edge = remote_edges[i];
+    if (edge.get_src() != remote_edge.get_dst() ||
+        edge.get_dst() != remote_edge.get_src()) {
+      std::cout << "edges are corrupt!" << std::endl;
+      std::abort();
+    }
+    const auto weight =
+        comp(edge, remote_edge) ? edge.get_weight() : remote_edge.get_weight();
+    edge.set_weight(weight);
+  }
+}
+
+std::pair<std::vector<WEdge14>, VertexRange>
+add_weights(UniformRandomWeightGenerator<VId, Weight, WEdge>& w_gen,
+            kagen::KaGenResult&& kagen_result, MPIComm comm) {
+  // assert: all back edges are existant and there are no duplicates
+  std::pair<std::vector<WEdge14>, VertexRange> result;
+  result.first = get_local_weighted_edges(w_gen, kagen_result);
+  result.second = kagen_result.vertex_range;
+  auto& [w_edges, local_range] = result;
+  const auto ranges = internal::get_ranges(local_range, comm);
+  kagen::KaGenResult{{}, {}} = std::move(kagen_result); // clear storage
+  auto remote_edges = internal::get_remote_edges_pointing_to_pe_pseudo_inplace(
+      w_edges, ranges, comm);
+  set_global_weighted_edges(remote_edges, w_edges);
+  return result;
 }
 } // namespace graphs

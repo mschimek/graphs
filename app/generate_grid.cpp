@@ -9,14 +9,15 @@
 int main() {
   MPI_Init(nullptr, nullptr);
   graphs::MPIComm comm;
-  auto [edges, range] = graphs::get_grid2D(4, 3, 1, true, comm);
+  auto [edges, range] = graphs::get_grid2D(4, 3, 1.0, true);
   // std::sort(edges.begin(), edges.end(), [](const auto& lhs, const auto& rhs)
   // {
   //   return lhs.weight < rhs.weight;
   // });
   //
   std::sort(edges.begin(), edges.end(), [](const auto& lhs, const auto& rhs) {
-    return std::tie(lhs.src, lhs.dst) < std::tie(rhs.src, rhs.dst);
+    return std::make_tuple(lhs.get_src(), lhs.get_dst()) <
+           std::make_tuple(rhs.get_src(), rhs.get_dst());
   });
   auto is_local = [&](const auto& v) {
     return range.first <= v && v <= range.second;
@@ -24,7 +25,7 @@ int main() {
 
   const auto num_local_edges =
       std::count_if(edges.begin(), edges.end(), [&](const auto& edge) {
-        return is_local(edge.src) && is_local(edge.dst);
+        return is_local(edge.get_src()) && is_local(edge.get_dst());
       });
 
   graphs::execute_in_order(comm, [&]() {

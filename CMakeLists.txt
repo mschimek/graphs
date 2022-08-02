@@ -40,12 +40,13 @@ find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
 
 add_subdirectory(external/rmat-fork)
-add_subdirectory(external/KaGen)
+#add_subdirectory(external/KaGen)
 add_subdirectory(external/KaDiS)
+add_subdirectory(external/kagen)
 
 add_library(graphs_base_target INTERFACE)
 target_compile_options(graphs_base_target INTERFACE -O3 -march=native -std=c++17)
-target_link_libraries(graphs_base_target INTERFACE MPI::MPI_CXX OpenMP::OpenMP_CXX)
+target_link_libraries(graphs_base_target INTERFACE MPI::MPI_CXX OpenMP::OpenMP_CXX KaGen::KaGen)
 target_include_directories(graphs_base_target INTERFACE 
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -64,7 +65,7 @@ add_library(graphs STATIC
   src/redistribute.cpp
   src/read_and_process_from_file.cpp
   src/utils.cpp)
-target_link_libraries(graphs PRIVATE graphs_base_target generators rmat)
+target_link_libraries(graphs PRIVATE graphs_base_target  rmat)
 target_link_libraries(graphs PUBLIC kadis)
 target_include_directories(graphs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
