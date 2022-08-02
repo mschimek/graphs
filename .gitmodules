@@ -5,7 +5,7 @@
 [submodule "external/rmat-fork"]
 	path = external/rmat-fork
 	url = git@git.scc.kit.edu:jj1592/rmat-fork.git
-[submodule "external/kagen"]
-	path = external/kagen
-	url = git@github.com:sebalamm/KaGen.git
-	branch = master
+[submodule "external/KAGEN"]
+	path = external/KAGEN
+	url = git@github.com:mschimek/KaGen.git
+	branch = disableRMAT
