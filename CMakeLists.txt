@@ -42,7 +42,7 @@ find_package(OpenMP REQUIRED)
 add_subdirectory(external/rmat-fork)
 #add_subdirectory(external/KaGen)
 add_subdirectory(external/KaDiS)
-add_subdirectory(external/kagen)
+add_subdirectory(external/KAGEN)
 
 add_library(graphs_base_target INTERFACE)
 target_compile_options(graphs_base_target INTERFACE -O3 -march=native -std=c++17)
