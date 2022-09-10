@@ -15,6 +15,10 @@ void repair_edges(WEdgeList& edges, const VertexRange& range, MPIComm comm);
 std::pair<std::vector<WEdge14>, VertexRange>
 add_weights(UniformRandomWeightGenerator<VId, Weight, WEdge>& w_gen,
             kagen::KaGenResult&& kagen_result, MPIComm comm);
+std::pair<std::vector<WEdge14>, VertexRange>
+add_weights_rmat(UniformRandomWeightGenerator<VId, Weight, WEdge>& w_gen,
+            kagen::KaGenResult&& kagen_result, MPIComm comm);
+
 
 std::size_t get_next_pow_two_with_exp_divisible_by(std::size_t i,
                                                    std::size_t divisor);

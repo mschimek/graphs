@@ -69,6 +69,74 @@ WEdgeList get_rmat_edges(const RMatParams& params,
   return edges;
 }
 
+template <typename T> auto get_edge_ranges(T max_edge, MPIComm comm) {
+  MPI_Datatype mpi_edge_type;
+  MPI_Type_contiguous(sizeof(T), MPI_BYTE, &mpi_edge_type);
+  MPI_Type_commit(&mpi_edge_type);
+  std::vector<T> max_edges(comm.size);
+  MPI_Allgather(&max_edge, 1, mpi_edge_type, max_edges.data(), 1, mpi_edge_type,
+                comm.comm);
+  MPI_Type_free(&mpi_edge_type);
+  return max_edges;
+}
+
+auto remove_remaining_duplicates(WEdgeList&& edges, MPIComm comm) {
+  auto max_edges = get_edge_ranges(edges.back(), comm);
+  const auto org_edge_size = edges.size();
+  if (comm.rank > 0) {
+    const auto last_edge_prev_rank = max_edges[comm.rank - 1];
+    const auto is_src_dst_equal = [&](const auto& edge) {
+      return edge.get_src() == last_edge_prev_rank.get_src() &&
+             edge.get_dst() == last_edge_prev_rank.get_dst();
+    };
+    const auto it =
+        std::remove_if(edges.begin(), edges.end(), is_src_dst_equal);
+    edges.erase(it, edges.end());
+  }
+  std::size_t num_edges = edges.size();
+  if (num_edges != org_edge_size) {
+    std::cout << (org_edge_size - num_edges) << std::endl;
+  }
+  kagen::KaGenResult res;
+  res.edges.resize(num_edges);
+  for (std::size_t i = 0; i < edges.size(); ++i) {
+    res.edges[i] = {edges[i].get_src(), edges[i].get_dst()};
+  }
+  res.vertex_range.first = edges.front().get_src();
+  res.vertex_range.second = edges.back().get_src();
+  // final verification that there are no duplicates:
+  auto SrcDstSort = [](const auto& lhs, const auto& rhs) {
+    return lhs < rhs;
+  };
+  auto SrcDstEqual = [](const auto& lhs, const auto& rhs) {
+    return lhs == rhs;
+  };
+  // verification
+  if (!std::is_sorted(res.edges.begin(), res.edges.end(), SrcDstSort)) {
+    std::cout << "edge are not sorted after remaining duplicate removal!"
+              << std::endl;
+    std::abort();
+  }
+  if (std::adjacent_find(res.edges.begin(), res.edges.end()) != res.edges.end()) {
+    std::cout << "edge are not unique after remaining duplicate removal!"
+              << std::endl;
+    std::abort();
+  }
+  const auto new_max_edges = get_edge_ranges(res.edges.back(), comm);
+  if (comm.rank > 0) {
+    const auto max_edge_prev = new_max_edges[comm.rank - 1];
+    if (std::get<0>(max_edge_prev) == std::get<0>(res.edges.front()) &&
+        std::get<1>(max_edge_prev) == std::get<1>(res.edges.front())) {
+      std::cout
+          << "edge are not globally sorted after remaining duplicate removal!"
+          << std::endl;
+      std::abort();
+    }
+  }
+
+  return res;
+}
+
 std::pair<WEdgeList, VertexRange>
 get_rmat_edges_evenly_distributed(const RMatParams& params,
                                   WeightGeneratorConfig<Weight> wgen_config,
@@ -90,15 +158,14 @@ get_rmat_edges_evenly_distributed(const RMatParams& params,
   }
 
   Ams::sortLevel(mpi_edge_type, edges, num_levels, gen, comm.comm, SrcDstSort);
+  edges.erase(std::unique(edges.begin(), edges.end()), edges.end());
   MPI_Type_free(&mpi_edge_type);
+
 
   const VId v_min = !edges.empty() ? edges.front().get_src() : -1;
   const VId v_max = !edges.empty() ? edges.back().get_src() : -1;
-  auto res = std::make_pair(std::move(edges), VertexRange{v_min, v_max});
-
-  // remove_upside_down(res.first, res.second);
-  // std::sort(res.first.begin(), res.first.end(), SrcDstOrder{});
-  // repair_edges(res.first, res.second, comm);
-  return res;
+  auto res = remove_remaining_duplicates(std::move(edges), comm);
+  UniformRandomWeightGenerator<VId, Weight, WEdge> w_gen{wgen_config};
+  return add_weights_rmat(w_gen, std::move(res), comm);
 }
 } // namespace graphs

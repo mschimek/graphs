@@ -12,6 +12,7 @@
 
 namespace graphs {
 using VertexRange = std::pair<std::size_t, std::size_t>;
+using EdgeRange = std::pair<Edge, Edge>;
 using VId = std::uint64_t;
 using Weight = std::uint8_t;
 
@@ -89,7 +90,6 @@ struct RMatParams {
   double a = 0.57, b = 0.19, c = 0.19;
 };
 
-
 std::pair<std::vector<WEdge>, VertexRange> get_gnm(
     std::size_t log_n, std::size_t log_m,
     WeightGeneratorConfig<Weight> wgen_config = WeightGeneratorConfig<Weight>{},
@@ -159,18 +159,23 @@ read_unweighted_graph(const std::string& filename, GraphFormat format,
                       MPIComm comm = MPIComm{});
 
 void add_weight_and_back_edges_in_directed_graph(const std::string& infile,
-                               const std::string& outfile, Weight max_weight,
-                               std::size_t num_VId_bytes, std::size_t num_weight_bytes);
-void add_weight_and_back_edges_in_undirected_graph(const std::string& infile,
-                               const std::string& outfile, Weight max_weight,
-                               std::size_t num_VId_bytes, std::size_t num_weight_bytes);
+                                                 const std::string& outfile,
+                                                 Weight max_weight,
+                                                 std::size_t num_VId_bytes,
+                                                 std::size_t num_weight_bytes);
+void add_weight_and_back_edges_in_undirected_graph(
+    const std::string& infile, const std::string& outfile, Weight max_weight,
+    std::size_t num_VId_bytes, std::size_t num_weight_bytes);
 void transform_undirected_graph_to_binary(const std::string& infile,
-                               const std::string& outfile, Weight max_weight,
-                               std::size_t num_VId_bytes, std::size_t num_weight_bytes);
+                                          const std::string& outfile,
+                                          Weight max_weight,
+                                          std::size_t num_VId_bytes,
+                                          std::size_t num_weight_bytes);
 
 void read_sort_write(const Configs& config);
 
-std::vector<WEdge> redistribute(const std::vector<WEdge>& local_data, std::uint64_t num_edges, MPIComm comm);
+std::vector<WEdge> redistribute(const std::vector<WEdge>& local_data,
+                                std::uint64_t num_edges, MPIComm comm);
 }; // namespace graphs
 
 #include "include/template_functions.hpp"

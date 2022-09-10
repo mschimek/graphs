@@ -81,11 +81,35 @@ std::vector<VertexRange> get_ranges(const VertexRange local_range,
   return ranges;
 }
 
+std::vector<EdgeRange> get_edge_ranges(const EdgeRange local_range,
+                                       MPIComm comm) {
+  std::vector<EdgeRange> ranges(comm.size);
+  ranges[comm.rank] = local_range;
+  MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, ranges.data(),
+                sizeof(EdgeRange), MPI_BYTE, comm.comm);
+  return ranges;
+}
+
 int get_home_pe(VId v, const std::vector<VertexRange>& ranges) {
   const auto is_v_smaller_than_range =
       [](const VId v, const VertexRange& range) { return v < range.first; };
   auto it = std::upper_bound(ranges.begin(), ranges.end(), v,
                              is_v_smaller_than_range);
+  if (it == ranges.begin()) {
+    std::cerr << "invalid home pe query" << std::endl;
+    std::abort();
+  }
+  return std::distance(ranges.begin(), it) - 1;
+}
+
+int get_home_pe(Edge e, const std::vector<EdgeRange>& ranges) {
+  const auto is_e_smaller_than_range = [](const Edge& e,
+                                          const EdgeRange& range) {
+    return std::make_pair(e.get_src(), e.get_dst()) <
+           std::make_pair(range.first.get_src(), range.first.get_dst());
+  };
+  auto it = std::upper_bound(ranges.begin(), ranges.end(), e,
+                             is_e_smaller_than_range);
   if (it == ranges.begin()) {
     std::cerr << "invalid home pe query" << std::endl;
     std::abort();
@@ -114,6 +138,39 @@ WEdgeList get_remote_edges_pointing_to_pe_pseudo_inplace(
   std::vector<int> send_counts(comm.size);
   for (const auto& edge : edges) {
     int pe = get_home_pe(edge.get_dst(), ranges);
+    ++send_counts[pe];
+  }
+  std::vector<int> recv_counts(comm.size);
+  std::vector<int> send_displs(comm.size);
+  std::vector<int> recv_displs(comm.size);
+
+  std::exclusive_scan(send_counts.begin(), send_counts.end(),
+                      send_displs.begin(), 0);
+  const std::size_t total_send_count = send_displs.back() + send_counts.back();
+  MPI_Alltoall(send_counts.data(), 1, MPI_INT, recv_counts.data(), 1, MPI_INT,
+               comm.comm);
+  std::exclusive_scan(recv_counts.begin(), recv_counts.end(),
+                      recv_displs.begin(), 0);
+  const std::size_t total_recv_count = recv_displs.back() + recv_counts.back();
+
+  WEdgeList recv_buf(total_recv_count);
+  memory_stats().print("in exchange");
+  const auto wedge_mpi_type = WEdge::MPI_Type{};
+  MPI_Alltoallv(edges.data(), send_counts.data(), send_displs.data(),
+                wedge_mpi_type.get_mpi_type(), recv_buf.data(),
+                recv_counts.data(), recv_displs.data(),
+                wedge_mpi_type.get_mpi_type(), comm.comm);
+  ips4o::parallel::sort(edges.begin(), edges.end(), SrcDstOrder<WEdge>{});
+  return recv_buf;
+}
+
+WEdgeList get_remote_edges_pointing_to_pe_pseudo_inplace(
+    WEdgeList& edges, const std::vector<EdgeRange>& ranges, MPIComm comm) {
+
+  ips4o::parallel::sort(edges.begin(), edges.end(), DstSrcOrder<WEdge>{});
+  std::vector<int> send_counts(comm.size);
+  for (const auto& edge : edges) {
+    int pe = get_home_pe(Edge{edge.get_dst(), edge.get_src()}, ranges);
     ++send_counts[pe];
   }
   std::vector<int> recv_counts(comm.size);
@@ -318,14 +375,32 @@ std::vector<WEdge14> get_local_weighted_edges(
   }
   return w_edges;
 }
-
-void set_global_weighted_edges(WEdgeList& remote_edges, WEdgeList& own_edges) {
+void set_global_weighted_edges(WEdgeList& remote_edges, WEdgeList& own_edges, MPIComm comm) {
   ips4o::parallel::sort(remote_edges.begin(), remote_edges.end(),
                         DstSrcOrder<WEdge14>{});
+
+  //MPI_Comm comm;
+  //execute_in_order(comm, [&](){
   if (remote_edges.size() != own_edges.size()) {
+    std::cout << remote_edges.size() << " " << own_edges.size() << std::endl;
+    std::cout << "error: -----" << std::endl;
+    for(const auto& edge_ : remote_edges) {
+      std::cout << edge_ << std::endl;
+      const auto it = std::find_if(own_edges.begin(), own_edges.end(), [&](const auto& edge) {
+              return (edge.get_src() == edge_.get_dst() && edge.get_dst() == edge_.get_src());
+          });
+      if(it == own_edges.end()) {
+        std::cout << "here" << std::endl;
+      }
+    }
+    std::cout << "-----" << std::endl;
+    for(const auto& edges : own_edges) {
+      std::cout << edges << std::endl;
+    }
     std::cout << "edges do not have equal size!" << std::endl;
     std::abort();
   }
+  //});
   auto comp = SrcDstOrder<WEdge>{};
   for (std::size_t i = 0; i < own_edges.size(); ++i) {
     auto& edge = own_edges[i];
@@ -350,10 +425,40 @@ add_weights(UniformRandomWeightGenerator<VId, Weight, WEdge>& w_gen,
   result.second = kagen_result.vertex_range;
   auto& [w_edges, local_range] = result;
   const auto ranges = internal::get_ranges(local_range, comm);
+
   kagen::KaGenResult{{}, {}} = std::move(kagen_result); // clear storage
   auto remote_edges = internal::get_remote_edges_pointing_to_pe_pseudo_inplace(
       w_edges, ranges, comm);
-  set_global_weighted_edges(remote_edges, w_edges);
+  set_global_weighted_edges(remote_edges, w_edges, comm);
+  return result;
+}
+
+std::pair<std::vector<WEdge14>, VertexRange>
+add_weights_rmat(UniformRandomWeightGenerator<VId, Weight, WEdge>& w_gen,
+                 kagen::KaGenResult&& kagen_result, MPIComm comm) {
+  // assert: all back edges are existant and there are no duplicates
+  std::pair<std::vector<WEdge14>, VertexRange> result;
+  result.first = get_local_weighted_edges(w_gen, kagen_result);
+  result.second = kagen_result.vertex_range;
+  auto& [w_edges, local_range] = result;
+  Edge min_edge{w_edges.front().get_src(), w_edges.front().get_dst()};
+  Edge max_edge{w_edges.back().get_src(), w_edges.back().get_dst()};
+  EdgeRange edge_range{min_edge, max_edge};
+  const auto ranges = internal::get_edge_ranges(edge_range, comm);
+  //execute_in_order(comm, [&]() {
+  //  if (comm.rank == 0) {
+  //    for (const auto range : ranges) {
+  //      std::cout << range.first << " " << range.second << std::endl;
+  //    }
+  //  }
+  //  for (const auto& edge : kagen_result.edges) {
+  //    std::cout << std::get<0>(edge) << " " << std::get<1>(edge) << std::endl;
+  //  }
+  //});
+  kagen::KaGenResult{{}, {}} = std::move(kagen_result); // clear storage
+  auto remote_edges = internal::get_remote_edges_pointing_to_pe_pseudo_inplace(
+      w_edges, ranges, comm);
+  set_global_weighted_edges(remote_edges, w_edges, comm);
   return result;
 }
 } // namespace graphs
