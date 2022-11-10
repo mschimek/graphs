@@ -4,43 +4,12 @@ project(
   DESCRIPTION "Unified distributed graph generation and input"
   LANGUAGES CXX)
 
-function(target_link_libraries_system target)
-  set(options PRIVATE PUBLIC INTERFACE)
-  cmake_parse_arguments(TLLS "${options}" "" "" ${ARGN})
-  foreach(op ${options})
-    if(TLLS_${op})
-      set(scope ${op})
-    endif()
-  endforeach(op)
-  set(libs ${TLLS_UNPARSED_ARGUMENTS})
-
-  foreach(lib ${libs})
-    get_target_property(lib_include_dirs ${lib} INTERFACE_INCLUDE_DIRECTORIES)
-    if(lib_include_dirs)
-      if(scope)
-        target_include_directories(${target} SYSTEM ${scope} ${lib_include_dirs})
-      else()
-        target_include_directories(${target} SYSTEM PRIVATE ${lib_include_dirs})
-      endif()
-    else()
-      message("Warning: ${lib} doesn't set INTERFACE_INCLUDE_DIRECTORIES. No include_directories set.")
-    endif()
-    if(scope)
-      target_link_libraries(${target} ${scope} ${lib})
-    else()
-      target_link_libraries(${target} ${lib})
-    endif()
-  endforeach()
-
-endfunction(target_link_libraries_system)
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
 
 add_subdirectory(external/rmat-fork)
-#add_subdirectory(external/KaGen)
 add_subdirectory(external/KaDiS)
 add_subdirectory(external/KAGEN)
 
@@ -65,8 +34,7 @@ add_library(graphs STATIC
   src/redistribute.cpp
   src/read_and_process_from_file.cpp
   src/utils.cpp)
-target_link_libraries(graphs PRIVATE graphs_base_target  rmat)
-target_link_libraries(graphs PUBLIC kadis)
+target_link_libraries(graphs PRIVATE graphs_base_target  rmat kadis)
 target_include_directories(graphs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(example app/example.cpp)
