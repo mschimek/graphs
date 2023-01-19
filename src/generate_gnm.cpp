@@ -10,7 +10,7 @@
 
 namespace graphs {
 
-std::pair<std::vector<WEdge14>, VertexRange>
+std::pair<std::vector<WEdge>, VertexRange>
 get_gnm(std::size_t log_n, std::size_t log_m,
         WeightGeneratorConfig<Weight> wgen_config, MPIComm comm) {
   memory_stats().print("before kagen 1");

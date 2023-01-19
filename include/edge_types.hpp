@@ -109,7 +109,7 @@ struct WEdge24 {
   std::uint64_t get_dst() const { return dst; }
   std::uint64_t get_weight() const { return weight; }
   WEdge24() = default;
-  WEdge24(std::uint64_t src, std::uint64_t dst, std::uint32_t weight)
+  WEdge24(std::uint64_t src, std::uint64_t dst, std::uint64_t weight)
       : src{src}, dst{dst}, weight{weight} {}
   friend std::ostream& operator<<(std::ostream& out, const WEdge24& edge) {
     return out << "(" << edge.src << ", " << edge.dst << ", " << edge.weight

@@ -12,10 +12,10 @@
 namespace graphs {
 void remove_upside_down(WEdgeList& edges, const VertexRange& range);
 void repair_edges(WEdgeList& edges, const VertexRange& range, MPIComm comm);
-std::pair<std::vector<WEdge14>, VertexRange>
+std::pair<std::vector<WEdge>, VertexRange>
 add_weights(UniformRandomWeightGenerator<VId, Weight, WEdge>& w_gen,
             kagen::KaGenResult&& kagen_result, MPIComm comm);
-std::pair<std::vector<WEdge14>, VertexRange>
+std::pair<std::vector<WEdge>, VertexRange>
 add_weights_rmat(UniformRandomWeightGenerator<VId, Weight, WEdge>& w_gen,
             kagen::KaGenResult&& kagen_result, MPIComm comm);
 

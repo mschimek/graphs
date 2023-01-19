@@ -364,11 +364,11 @@ std::size_t get_next_pow_two_with_exp_divisible_by(std::size_t i,
   return 1ull << exponent_divisible_by;
 }
 
-std::vector<WEdge14> get_local_weighted_edges(
+std::vector<WEdge> get_local_weighted_edges(
     UniformRandomWeightGenerator<VId, Weight, WEdge>& w_gen,
     const kagen::KaGenResult& kagen_result) {
   const auto& [edges, vertex_range] = kagen_result;
-  std::vector<WEdge14> w_edges;
+  std::vector<WEdge> w_edges;
   w_edges.reserve(edges.size());
   for (const auto& [src, dst] : edges) {
     w_edges.emplace_back(src, dst, w_gen(src, dst));
@@ -377,7 +377,7 @@ std::vector<WEdge14> get_local_weighted_edges(
 }
 void set_global_weighted_edges(WEdgeList& remote_edges, WEdgeList& own_edges, MPIComm comm) {
   ips4o::parallel::sort(remote_edges.begin(), remote_edges.end(),
-                        DstSrcOrder<WEdge14>{});
+                        DstSrcOrder<WEdge>{});
 
   //MPI_Comm comm;
   //execute_in_order(comm, [&](){
@@ -416,11 +416,11 @@ void set_global_weighted_edges(WEdgeList& remote_edges, WEdgeList& own_edges, MP
   }
 }
 
-std::pair<std::vector<WEdge14>, VertexRange>
+std::pair<std::vector<WEdge>, VertexRange>
 add_weights(UniformRandomWeightGenerator<VId, Weight, WEdge>& w_gen,
             kagen::KaGenResult&& kagen_result, MPIComm comm) {
   // assert: all back edges are existant and there are no duplicates
-  std::pair<std::vector<WEdge14>, VertexRange> result;
+  std::pair<std::vector<WEdge>, VertexRange> result;
   result.first = get_local_weighted_edges(w_gen, kagen_result);
   result.second = kagen_result.vertex_range;
   auto& [w_edges, local_range] = result;
@@ -433,11 +433,11 @@ add_weights(UniformRandomWeightGenerator<VId, Weight, WEdge>& w_gen,
   return result;
 }
 
-std::pair<std::vector<WEdge14>, VertexRange>
+std::pair<std::vector<WEdge>, VertexRange>
 add_weights_rmat(UniformRandomWeightGenerator<VId, Weight, WEdge>& w_gen,
                  kagen::KaGenResult&& kagen_result, MPIComm comm) {
   // assert: all back edges are existant and there are no duplicates
-  std::pair<std::vector<WEdge14>, VertexRange> result;
+  std::pair<std::vector<WEdge>, VertexRange> result;
   result.first = get_local_weighted_edges(w_gen, kagen_result);
   result.second = kagen_result.vertex_range;
   auto& [w_edges, local_range] = result;

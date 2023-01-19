@@ -14,7 +14,7 @@ namespace graphs {
 using VertexRange = std::pair<std::size_t, std::size_t>;
 using EdgeRange = std::pair<Edge, Edge>;
 using VId = std::uint64_t;
-using Weight = std::uint8_t;
+using Weight = std::uint32_t;
 
 struct MPIComm {
   MPIComm(MPI_Comm comm_) : comm{comm_} {
@@ -27,7 +27,7 @@ struct MPIComm {
   int size;
 };
 
-using WEdge = WEdge14;
+using WEdge = WEdge24;
 using WEdgeList = std::vector<WEdge>;
 
 template <typename EdgeType> struct SrcDstOrder {
