@@ -1,11 +1,11 @@
 [submodule "external/KaDiS"]
 	path = external/KaDiS
-	url = git@github.com:mschimek/KaDiS.git
+	url = https://github.com/mschimek/KaDiS.git
     branch = make_ams_parallel
 [submodule "external/rmat-fork"]
 	path = external/rmat-fork
-	url = git@git.scc.kit.edu:jj1592/rmat-fork.git
+	url = https://git.scc.kit.edu/jj1592/rmat-fork.git
 [submodule "external/KAGEN"]
 	path = external/KAGEN
-	url = git@github.com:mschimek/KaGen.git
+	url = https://github.com/mschimek/KaGen.git
 	branch = disableRMAT
